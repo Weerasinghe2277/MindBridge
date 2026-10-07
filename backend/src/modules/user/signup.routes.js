@@ -55,5 +55,21 @@ router.post('/register', body(registerSchema), async (req, res) => {
     studentId: b.role === 'student' ? b.studentId : undefined,
     faculty: b.faculty, year: b.year,
   });
+  if (b.role !== 'student') {
+    const settings = await getSettings();
+    user.professional = { ...b.professional, languages: ['English'], focusAreas: [], modes: ['online', 'in_person'] };
+    user.availability = { sessionLength: settings.appointments.defaultSessionLength };
+    user.verification = { status: 'pending', submittedAt: new Date(), history: [{ label: 'Application submitted', at: new Date() }] };
+  }
+  await user.setPassword(b.password);
+  await user.save();
+  if (b.role !== 'student') {
+    const admins = await User.find({ role: 'admin', status: 'active' });
+    await Promise.all(admins.map((a) => notify(a, { type: 'verification', title: `New ${b.role} application`, body: b.name, icon: 'person_add', tone: 'blue', link: { screen: 'verification', id: user.id } })));
+    await audit(user, 'verification', `New ${b.role} application`, b.name);
+  }
+  const dev = await createOtp(user.email, 'verify_email');
+  res.status(201).json({ email: user.email, needsVerification: true, ...dev });
+});
 
 module.exports = router;
