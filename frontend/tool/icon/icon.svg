@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E4F3EE"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1D5FB4"/><stop offset="1" stop-color="#1E8FC8"/>
+    </linearGradient>
+    <linearGradient id="green" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5CC27A"/><stop offset="1" stop-color="#14A08C"/>
+    </linearGradient>
+    <linearGradient id="bridge" gradientUnits="userSpaceOnUse" x1="360" y1="0" x2="664" y2="0">
+      <stop offset="0" stop-color="#1D6FB8"/><stop offset="1" stop-color="#17A389"/>
+    </linearGradient>
+    <linearGradient id="brainL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7DD38A"/><stop offset="1" stop-color="#1FA58C"/>
+    </linearGradient>
+    <linearGradient id="brainR" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2BC0E0"/><stop offset="1" stop-color="#1D6FD0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <g transform="translate(-61.4 -72.6) scale(1.12)">
+  <!-- rays -->
+  <g stroke="#6CCB86" stroke-width="30" stroke-linecap="round">
+    <line x1="512" y1="214" x2="512" y2="262"/>
+    <line x1="420" y1="244" x2="444" y2="284"/>
+    <line x1="604" y1="244" x2="580" y2="284"/>
+  </g>
+  <!-- brain: two lobes -->
+  <path fill="url(#brainL)" d="M500 300 C470 296 440 312 432 338 C404 342 386 368 392 396 C374 414 376 446 398 462 C398 492 424 512 452 508 C468 526 490 530 500 524 Z"/>
+  <path fill="url(#brainR)" d="M524 300 C554 296 584 312 592 338 C620 342 638 368 632 396 C650 414 648 446 626 462 C626 492 600 512 572 508 C556 526 534 530 524 524 Z"/>
+  <!-- heads -->
+  <circle cx="286" cy="404" r="78" fill="url(#blue)"/>
+  <circle cx="738" cy="404" r="78" fill="url(#green)"/>
+  <!-- bodies: arms reaching toward the centre -->
+  <path fill="url(#blue)" d="M190 580 C190 520 240 500 300 505 C370 510 420 550 470 585 C420 568 380 562 350 575 C300 600 300 680 360 740 C400 780 450 810 480 830 C380 800 290 760 235 700 C205 666 190 625 190 580 Z"/>
+  <path fill="url(#green)" d="M834 580 C834 520 784 500 724 505 C654 510 604 550 554 585 C604 568 644 562 674 575 C724 600 724 680 664 740 C624 780 574 810 544 830 C644 800 734 760 789 700 C819 666 834 625 834 580 Z"/>
+  <!-- bridge: railing arc, deck arc and posts, joining the two people -->
+  <g fill="none" stroke="url(#bridge)" stroke-linecap="round">
+    <path stroke-width="30" d="M352 668 Q512 560 672 668"/>
+    <path stroke-width="34" d="M372 748 Q512 652 652 748"/>
+    <g stroke-width="20">
+      <line x1="430" y1="626" x2="430" y2="705"/>
+      <line x1="512" y1="613" x2="512" y2="690"/>
+      <line x1="594" y1="626" x2="594" y2="705"/>
+    </g>
+  </g>
+  </g>
+</svg>
