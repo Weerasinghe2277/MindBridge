@@ -65,7 +65,7 @@ The emulator reaches your computer's API at `10.0.2.2:4000` automatically. In de
 | Student | `it23714052@my.sliit.lk` | Pasindi Perera — has a pending booking, mood history and journal |
 | Counsellor | `hasini.k@sliit.lk` | Dr. Hasini Kalupahana — requests, today's sessions, a duplicate to resolve |
 | Doctor | `ruwan.d@sliit.lk` | Dr. Ruwan Dissanayake — a priority referral and consultations |
-| Admin | `malsha.g@sliit.lk` | Malsha Gunawardena — uses a sign-in code (two-factor) |
+| Admin | `mindbrige.support@gmail.com` | Malsha Gunawardena — uses a sign-in code (two-factor) |
 
 Without SMTP configured, one-time codes (email verification, password reset, admin sign-in) are printed in the API console **and shown inside the app** in a "Development mode" banner. Set `SMTP_*` in `.env` to send real emails; codes are never exposed when `NODE_ENV=production`.
 

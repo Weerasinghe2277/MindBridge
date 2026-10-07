@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     null: 'it23714052@my.sliit.lk',
     'counsellor': 'hasini.k@sliit.lk',
     'doctor': 'ruwan.d@sliit.lk',
-    'admin': 'malsha.g@sliit.lk',
+    'admin': 'mindbrige.support@gmail.com',
   };
 
   @override

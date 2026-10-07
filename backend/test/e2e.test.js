@@ -45,7 +45,7 @@ before(async () => {
   tokens.student = await login('it23714052@my.sliit.lk');
   tokens.counsellor = await login('hasini.k@sliit.lk');
   tokens.doctor = await login('ruwan.d@sliit.lk');
-  tokens.admin = await login('malsha.g@sliit.lk');
+  tokens.admin = await login('mindbrige.support@gmail.com');
 });
 
 after(async () => {
@@ -158,7 +158,8 @@ test('availability: hours, blocks and booking conflicts (FR2)', async () => {
   assert.equal(bad.status, 400);
   ok(await call('PUT', '/staff/availability', tokens.counsellor, { sessionLength: 30, bufferMinutes: 0 }));
   const appts = ok(await call('GET', '/appointments?scope=upcoming', tokens.counsellor)).appointments.filter((a) => a.status === 'confirmed');
-  const a = appts[0];
+  // A 30-minute block must end by 23:59, so skip late-evening bookings (seed times follow the clock).
+  const a = appts.find((x) => T.toMinutes(T.local(x.start).time) + 30 < 24 * 60);
   const d = T.local(a.start);
   const clash = await call('POST', '/staff/availability/blocks', tokens.counsellor, { date: d.dateStr, from: d.time, to: T.fromMinutes(T.toMinutes(d.time) + 30), reason: 'Meeting' });
   assert.equal(clash.status, 409);
