@@ -4,7 +4,10 @@ const { encryptedString } = require('../utils/crypto');
 const { Schema } = mongoose;
 
 // pending               – student requested, waiting for counsellor (FR4)
-
+// confirmed             – counsellor accepted
+// reschedule_requested  – student asked to move a booking; original slot is kept until confirmed
+// reschedule_proposed   – counsellor proposed a new time; student must accept
+// declined / cancelled / completed / no_show – terminal states
 const STATUSES = ['pending', 'confirmed', 'reschedule_requested', 'reschedule_proposed', 'declined', 'cancelled', 'completed', 'no_show'];
 const ACTIVE = ['pending', 'confirmed', 'reschedule_requested', 'reschedule_proposed'];
 
@@ -38,6 +41,25 @@ const AppointmentSchema = new Schema({
     by: { type: String, enum: ['student', 'counsellor'] },
     at: Date,
   },
+  decline: {
+    reason: String,
+    message: String,
+    suggestedSlots: [Date],
+  },
+  cancel: { reason: String, by: String, at: Date },
+  remindersOn: { type: Boolean, default: true },
+  remindersSent: { day: { type: Boolean, default: false }, hour: { type: Boolean, default: false } },
+  session: {
+    startedAt: Date,
+    endedAt: Date,
+    checklist: [{ label: String, done: Boolean }],
+  },
+  history: [HistorySchema],
+}, { timestamps: true, toJSON: { getters: true } });
+
+AppointmentSchema.index(
+  { counsellor: 1, start: 1 },
+  { unique: true, partialFilterExpression: { slotLock: true } },
 );
 
 // Human-friendly booking reference (e.g. MB-20481) from an atomic counter, so it is always unique.
@@ -51,7 +73,9 @@ AppointmentSchema.pre('validate', async function setReference() {
   this.reference = `MB-${20000 + Number(counter.value)}`;
 });
 
-
+AppointmentSchema.virtual('isActive').get(function isActive() {
+  return ACTIVE.includes(this.status);
+});
 
 module.exports = mongoose.model('Appointment', AppointmentSchema);
 module.exports.STATUSES = STATUSES;
