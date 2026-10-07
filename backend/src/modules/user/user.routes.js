@@ -66,6 +66,39 @@ router.patch('/users/:id/role', body(z.object({ role: z.enum(['student', 'counse
   res.json({ user: userRow(u), from: ROLE_LABEL[from], to: ROLE_LABEL[to] });
 });
 
+router.patch('/users/:id/status', body(z.object({ status: z.enum(['active', 'deactivated']), reason: z.string().trim().max(300).optional().default('') })), async (req, res) => {
+  const u = await loadUser(req.params.id);
+  if (u._id.equals(req.user._id)) throw badRequest('You can’t deactivate your own account.');
+  if (req.body.status === 'deactivated' && !req.body.reason) throw badRequest('Add a reason. It’s recorded in the activity log.', 'VALIDATION_ERROR', { field: 'reason' });
+  u.status = req.body.status;
+  u.statusReason = req.body.reason;
+  await u.save();
+  if (u.status === 'deactivated') {
+    await AuthSession.updateMany({ user: u._id }, { revoked: true });
+    const active = await Appointment.find({ $or: [{ student: u._id }, { counsellor: u._id }], status: { $in: Appointment.ACTIVE } });
+    for (const a of active) {
+      a.status = 'cancelled'; a.slotLock = false; a.cancel = { reason: 'Account deactivated', by: 'admin', at: new Date() };
+      a.history.push({ status: 'cancelled', label: 'Cancelled by Student Affairs', by: 'admin' });
+      await a.save();
+      const other = a.student.equals(u._id) ? a.counsellor : a.student;
+      await notify(other, { type: 'cancel', title: 'Booking cancelled', body: `Your booking on ${T.fmtDateTime(a.start)} was cancelled by Student Affairs.`, icon: 'event_busy', tone: 'red' });
+    }
+  }
+  await audit(req.user, 'users', u.status === 'active' ? 'Account activated' : 'Account deactivated', `${u.name}${req.body.reason ? ` — ${req.body.reason}` : ''}`);
+  res.json({ user: userRow(u) });
+});
 
+router.post('/users/:id/password-reset', async (req, res) => {
+  const u = await loadUser(req.params.id);
+  const dev = await createOtp(u.email, 'reset_password');
+  await audit(req.user, 'users', 'Password reset sent', u.name);
+  res.json({ sent: true, email: u.email, ...dev });
+});
+
+router.get('/roles', async (req, res) => {
+  const counts = {};
+  for (const r of Object.keys(ROLE_LABEL)) counts[r] = await User.countDocuments({ role: r });
+  res.json({ counts });
+});
 
 module.exports = router;
