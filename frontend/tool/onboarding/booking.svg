@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <!-- Onboarding 2 · Booking (Tone.blue). A student booking a session on their phone. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E2ECF7"/><stop offset="1" stop-color="#F6F2EA"/>
+    </linearGradient>
+    <g id="leaf"><path d="M0 0 C18 -26 56 -26 68 0 C56 26 18 26 0 0 Z"/><path d="M4 0 H60" stroke="#FFFDF9" stroke-opacity=".55" stroke-width="3" fill="none"/></g>
+    <g id="cell"><rect width="30" height="30" rx="9" fill="#EFEADF"/></g>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="1010" cy="110" r="330" fill="#2B5C8A" opacity=".06"/>
+  <circle cx="120" cy="790" r="270" fill="#2B5C8A" opacity=".05"/>
+
+  <!-- ground -->
+  <path d="M0 640 Q600 575 1200 640 V800 H0 Z" fill="#C5D7B3"/>
+  <path d="M0 715 Q520 670 1200 720 V800 H0 Z" fill="#B8D39A"/>
+
+  <!-- clock -->
+  <circle cx="270" cy="220" r="78" fill="#FFFDF9"/>
+  <circle cx="270" cy="220" r="78" fill="none" stroke="#2B5C8A" stroke-width="10"/>
+  <path d="M270 220 V172 M270 220 L304 238" stroke="#2F5A3D" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="270" cy="220" r="9" fill="#2F5A3D"/>
+  <g fill="#2B5C8A" opacity=".5"><circle cx="270" cy="160" r="5"/><circle cx="330" cy="220" r="5"/><circle cx="270" cy="280" r="5"/><circle cx="210" cy="220" r="5"/></g>
+
+  <!-- calendar card -->
+  <g transform="rotate(-6 300 450)">
+    <rect x="200" y="360" width="200" height="180" rx="22" fill="#FFFDF9"/>
+    <path d="M200 382 a22 22 0 0 1 22 -22 h156 a22 22 0 0 1 22 22 v28 h-200 Z" fill="#2B5C8A"/>
+    <rect x="240" y="346" width="12" height="34" rx="6" fill="#2F5A3D"/><rect x="348" y="346" width="12" height="34" rx="6" fill="#2F5A3D"/>
+    <g fill="#E2ECF7"><rect x="226" y="430" width="34" height="30" rx="8"/><rect x="283" y="430" width="34" height="30" rx="8"/><rect x="340" y="430" width="34" height="30" rx="8"/>
+    <rect x="226" y="480" width="34" height="30" rx="8"/><rect x="340" y="480" width="34" height="30" rx="8"/></g>
+    <rect x="283" y="480" width="34" height="30" rx="8" fill="#4A7C59"/>
+  </g>
+
+  <!-- phone -->
+  <ellipse cx="600" cy="652" rx="170" ry="16" fill="#2F5A3D" opacity=".16"/>
+  <rect x="470" y="100" width="260" height="530" rx="42" fill="#2F5A3D"/>
+  <rect x="486" y="118" width="228" height="494" rx="30" fill="#FFFDF9"/>
+  <rect x="566" y="132" width="68" height="10" rx="5" fill="#2F5A3D" opacity=".85"/>
+  <rect x="506" y="166" width="188" height="44" rx="14" fill="#E2ECF7"/>
+  <circle cx="530" cy="188" r="12" fill="#2B5C8A"/>
+  <rect x="552" y="180" width="96" height="8" rx="4" fill="#2B5C8A" opacity=".6"/><rect x="552" y="194" width="62" height="6" rx="3" fill="#2B5C8A" opacity=".35"/>
+  <g transform="translate(510 232)">
+    <use href="#cell"/><use href="#cell" x="37"/><use href="#cell" x="74"/><use href="#cell" x="111"/><use href="#cell" x="148"/>
+    <use href="#cell" y="38"/><use href="#cell" x="37" y="38"/><use href="#cell" x="111" y="38"/><use href="#cell" x="148" y="38"/>
+    <use href="#cell" y="76"/><use href="#cell" x="37" y="76"/><use href="#cell" x="74" y="76"/><use href="#cell" x="111" y="76"/><use href="#cell" x="148" y="76"/>
+    <use href="#cell" y="114"/><use href="#cell" x="37" y="114"/><use href="#cell" x="74" y="114"/>
+    <rect x="74" y="38" width="30" height="30" rx="9" fill="#4A7C59"/>
+    <path d="M81 53 l6 6 l11 -12" stroke="#FFFDF9" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <rect x="506" y="400" width="86" height="36" rx="18" fill="#E2ECF7"/>
+  <rect x="604" y="400" width="90" height="36" rx="18" fill="#E6EEDD" stroke="#4A7C59" stroke-width="3"/>
+  <rect x="506" y="448" width="86" height="36" rx="18" fill="#E2ECF7"/>
+  <rect x="604" y="448" width="90" height="36" rx="18" fill="#E2ECF7"/>
+  <g fill="#2B5C8A" opacity=".45"><rect x="528" y="414" width="42" height="8" rx="4"/><rect x="528" y="462" width="42" height="8" rx="4"/><rect x="626" y="462" width="46" height="8" rx="4"/></g>
+  <rect x="626" y="414" width="46" height="8" rx="4" fill="#3A6647"/>
+  <rect x="506" y="540" width="188" height="48" rx="24" fill="#4A7C59"/>
+  <rect x="560" y="560" width="80" height="8" rx="4" fill="#FFFDF9"/>
+
+  <!-- confirmed badge -->
+  <circle cx="735" cy="130" r="44" fill="#4A7C59"/>
+  <circle cx="735" cy="130" r="44" fill="none" stroke="#FFFDF9" stroke-width="6"/>
+  <path d="M715 131 l14 14 l26 -28" stroke="#FFFDF9" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- student pointing at the phone -->
+  <ellipse cx="900" cy="672" rx="90" ry="13" fill="#2F5A3D" opacity=".16"/>
+  <rect x="862" y="500" width="30" height="168" rx="15" fill="#2F5A3D"/>
+  <rect x="904" y="500" width="30" height="168" rx="15" fill="#3A6647"/>
+  <ellipse cx="872" cy="668" rx="26" ry="11" fill="#22261F"/><ellipse cx="925" cy="668" rx="26" ry="11" fill="#22261F"/>
+  <path d="M938 410 L956 500" stroke="#2B5C8A" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="958" cy="508" r="14" fill="#C68B64"/>
+  <rect x="852" y="370" width="94" height="160" rx="40" fill="#2B5C8A"/>
+  <path d="M866 402 L790 352" stroke="#2B5C8A" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="782" cy="346" r="15" fill="#C68B64"/>
+  <rect x="888" y="344" width="22" height="32" rx="9" fill="#B47A55"/>
+  <circle cx="899" cy="318" r="38" fill="#C68B64"/>
+  <path d="M862 322 C856 282 890 270 914 276 C940 282 946 304 938 322 L936 340 C934 312 912 300 884 304 C872 310 868 326 866 344 Z" fill="#2F2A24"/>
+  <circle cx="886" cy="320" r="4" fill="#2F2A24"/><circle cx="912" cy="320" r="4" fill="#2F2A24"/>
+  <path d="M890 338 q9 7 18 0" stroke="#8A4E35" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <circle cx="878" cy="332" r="6" fill="#E58F7E" opacity=".45"/>
+
+  <!-- plant -->
+  <path d="M1040 590 h80 l-10 74 h-60 Z" fill="#E9A84A"/>
+  <rect x="1034" y="580" width="92" height="18" rx="9" fill="#D48E30"/>
+  <use href="#leaf" fill="#4A7C59" transform="translate(1080 580) rotate(-70) scale(1.3)"/>
+  <use href="#leaf" fill="#6E9E6F" transform="translate(1076 584) rotate(-130) scale(1.1)"/>
+  <use href="#leaf" fill="#3F6E4E" transform="translate(1084 584) rotate(-30) scale(1.05)"/>
+
+  <!-- sparkles -->
+  <g fill="#2B5C8A" opacity=".45">
+    <path d="M410 120 l7 18 l18 7 l-18 7 l-7 18 l-7 -18 l-18 -7 l18 -7 Z"/>
+    <path d="M1050 250 l5 13 l13 5 l-13 5 l-5 13 l-5 -13 l-13 -5 l13 -5 Z"/>
+  </g>
+</svg>

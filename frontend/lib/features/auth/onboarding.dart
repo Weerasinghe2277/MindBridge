@@ -20,9 +20,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _page = 0;
 
   static const _pages = [
-    ('spa', Tone.green, 'Welcome', 'A calmer way to get support', 'MindBridge connects you with your university’s counsellors and gives you simple tools to look after your wellbeing between classes.', <(bool, String)>[]),
-    ('event_available', Tone.blue, 'Booking', 'Book in four clear steps', null, [(true, 'Choose a counsellor, date, time and meeting type'), (true, 'See your status at every stage: pending, confirmed, rescheduled'), (true, 'Reschedule or cancel any time, without booking twice')]),
-    ('shield_lock', Tone.lilac, 'Privacy', 'Private by default, help when you need it', null, [(true, 'Mood check-ins and journal are visible only to you'), (true, 'Counsellors see your booking, never your check-ins'), (true, 'The 1926 helpline is one tap away on every screen')]),
+    ('welcome', 'A student relaxing under a tree with a warm drink, a bridge in the distance', 'Welcome', 'A calmer way to get support', 'MindBridge connects you with your university’s counsellors and gives you simple tools to look after your wellbeing between classes.', <(bool, String)>[]),
+    ('booking', 'A student booking a counselling session on a phone calendar', 'Booking', 'Book in four clear steps', null, [(true, 'Choose a counsellor, date, time and meeting type'), (true, 'See your status at every stage: pending, confirmed, rescheduled'), (true, 'Reschedule or cancel any time, without booking twice')]),
+    ('privacy', 'A student writing in a journal inside a protective shield, with a helpline call button nearby', 'Privacy', 'Private by default, help when you need it', null, [(true, 'Mood check-ins and journal are visible only to you'), (true, 'Counsellors see your booking, never your check-ins'), (true, 'The 1926 helpline is one tap away on every screen')]),
   ];
 
   Future<void> _finish(Widget next) async {
@@ -61,7 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               itemBuilder: (_, i) {
                 final p = _pages[i];
                 return ListView(padding: const EdgeInsets.fromLTRB(18, 0, 18, 18), children: [
-                  MediaPlaceholder(height: i == 0 ? 280 : 230, icon: p.$1, tone: p.$2),
+                  _Illustration(asset: 'assets/images/onboarding_${p.$1}.png', label: p.$2),
                   const SizedBox(height: 18),
                   StepsBar(n: i + 1, of: 3, label: p.$3),
                   const SizedBox(height: 14),
@@ -90,4 +90,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
   }
+}
+
+/// Onboarding artwork, framed like the app's cards. Sources: tool/onboarding/*.svg.
+class _Illustration extends StatelessWidget {
+  const _Illustration({required this.asset, required this.label});
+  final String asset;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: C.field)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(19),
+          child: AspectRatio(
+            aspectRatio: 3 / 2,
+            child: Image.asset(asset, fit: BoxFit.cover, semanticLabel: label, filterQuality: FilterQuality.medium),
+          ),
+        ),
+      );
 }
