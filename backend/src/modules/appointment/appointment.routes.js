@@ -9,7 +9,9 @@ const User = require('../../models/User');
 const { requireAuth, requireRole, requireVerified } = require('../../middleware/auth');
 const { body, objectId, z } = require('../../middleware/validate');
 const { serialize, POP, loadFor, outFor: out } = require('../../services/appointments');
-
+const { assertSlotFree, slotsForDate } = require('../../services/slots');
+const { getSettings } = require('../../services/settings');
+const { notify } = require('../../services/notify');
 const T = require('../../utils/time');
 const { badRequest, notFound, conflict } = require('../../utils/errors');
 
@@ -65,6 +67,17 @@ router.get('/', async (req, res) => {
   res.json({ appointments: list.map((a) => out(req, a)) });
 });
 
+// FR7 — lets the booking flow show "No other active booking" before submit.
+router.get('/active-check', requireRole('student'), async (req, res) => {
+  const existing = await Appointment.findOne(activeQuery(req.user._id)).populate(POP);
+  const settings = await getSettings();
+  res.json({ existing: existing ? out(req, existing) : null, blocking: settings.appointments.blockDuplicateBookings });
+});
+
+router.get('/:id', async (req, res) => {
+  const a = await loadFor(req, req.params.id);
+  res.json({ appointment: out(req, a) });
+});
 
 // ---------- Booking (FR2, FR3, FR7) ----------
 const createSchema = z.object({
@@ -73,6 +86,12 @@ const createSchema = z.object({
   mode: z.enum(['online', 'in_person']),
   note: z.string().trim().max(1000).optional().default(''),
 });
+
+router.post('/', requireRole('student'), body(createSchema), async (req, res) => {
+  const { counsellorId, start, mode, note } = req.body;
+  const settings = await getSettings();
+  if (mode === 'online' && !settings.appointments.allowOnline) throw badRequest('Online sessions are not available right now.');
+  if (mode === 'in_person' && !settings.appointments.allowInPerson) throw badRequest('In-person sessions are not available right now.');
 
   const counsellor = await User.findOne({ _id: counsellorId, role: 'counsellor', status: 'active', 'verification.status': 'approved' });
   if (!counsellor) throw notFound('This counsellor is not available for booking.');
@@ -84,6 +103,23 @@ const createSchema = z.object({
     throw conflict('You already have an active booking. Reschedule it instead of booking twice.', 'DUPLICATE_BOOKING', { existing: out(req, existing[0]) });
   }
 
+  const check = await assertSlotFree(counsellor, start);
+  if (!check.ok) throw conflict(SLOT_MESSAGES[check.reason] || SLOT_MESSAGES.booked, 'SLOT_TAKEN');
+
+  const a = new Appointment({
+    student: req.user._id,
+    counsellor: counsellor._id,
+    start: new Date(check.slot.start),
+    end: new Date(check.slot.end),
+    mode,
+    location: mode === 'in_person' ? (counsellor.professional?.room || 'Wellbeing Centre, Room 2.14, Main Building') : 'Online',
+    note,
+    duplicateOf: existing.map((e) => e._id),
+    flaggedDuplicate: existing.length > 0,
+    history: [{ status: 'pending', label: 'Request sent', by: 'student' }],
+  });
+  await saveHandlingSlotRace(a);
+  await a.populate(POP);
 
   await notify(counsellor, {
     type: 'booking_request', title: 'New booking request',
@@ -99,7 +135,29 @@ const createSchema = z.object({
   res.status(201).json({ appointment: out(req, a) });
 });
 
+// ---------- Counsellor decisions (FR6) ----------
+function meetingLinkFor(a) {
+  return `https://meet.jit.si/MindBridge-${a.reference}-${crypto.randomBytes(4).toString('hex')}`;
+}
 
+router.post('/:id/accept', requireRole('counsellor'), async (req, res) => {
+  const a = await loadFor(req, req.params.id);
+  if (a.status === 'pending') {
+    if (a.start <= new Date()) throw conflict('This request’s time has already passed.', 'EXPIRED');
+    a.status = 'confirmed';
+    if (a.mode === 'online' && !a.meetingLink) a.meetingLink = meetingLinkFor(a);
+    a.history.push({ status: 'confirmed', label: 'Confirmed', by: 'counsellor' });
+    a.duplicateOf = [];
+    await a.save();
+    await notify(a.student, { type: 'booking', title: 'Booking confirmed', body: `${req.user.name} confirmed ${T.fmtDateTime(a.start)}.`, icon: 'event_available', tone: 'green', link: { screen: 'appointment', id: a.id } });
+  } else if (a.status === 'reschedule_requested') {
+    await applyProposal(a, 'counsellor');
+    await notify(a.student, { type: 'reschedule', title: 'New time confirmed', body: `${req.user.name} confirmed ${T.fmtDateTime(a.start)}.`, icon: 'update', tone: 'blue', link: { screen: 'appointment', id: a.id } });
+  } else {
+    throw conflict('Couldn’t accept this request. The student may have cancelled a moment ago.', 'STATE_CHANGED');
+  }
+  res.json({ appointment: out(req, a) });
+});
 
 const declineSchema = z.object({
   reason: z.string().trim().min(1, 'Choose a reason').max(120),
@@ -127,7 +185,13 @@ router.post('/:id/decline', requireRole('counsellor'), body(declineSchema), asyn
       for (const s of slots) if (s.available && new Date(s.start).getTime() !== a.start.getTime() && suggested.length < 3) suggested.push(new Date(s.start));
     }
   }
- 
+  a.status = 'declined';
+  a.slotLock = false;
+  a.decline = { reason: req.body.reason, message: req.body.message, suggestedSlots: suggested };
+  a.history.push({ status: 'declined', label: 'Declined', by: 'counsellor' });
+  await a.save();
+  await notify(a.student, { type: 'booking', title: 'Request declined', body: req.body.message || req.body.reason, icon: 'event_busy', tone: 'red', link: { screen: 'appointment', id: a.id } });
+  res.json({ appointment: out(req, a) });
 });
 
 router.get('/:id/duplicates', requireRole('counsellor'), async (req, res) => {
@@ -146,6 +210,72 @@ router.post('/:id/ask-student', requireRole('counsellor'), async (req, res) => {
   res.json({ sent: true });
 });
 
+// ---------- Reschedule (FR3) ----------
+const rescheduleSchema = z.object({
+  start: z.string().datetime({ offset: true }),
+  reason: z.string().trim().max(500).optional().default(''),
+});
+
+async function applyProposal(a, by) {
+  const len = a.proposal.end - a.proposal.start;
+  a.start = a.proposal.start;
+  a.end = new Date(a.proposal.start.getTime() + len);
+  a.status = 'confirmed';
+  a.remindersSent = { day: false, hour: false };
+  if (a.mode === 'online' && !a.meetingLink) a.meetingLink = meetingLinkFor(a);
+  a.history.push({ status: 'confirmed', label: 'Rescheduled', by });
+  a.proposal = undefined;
+  await saveHandlingSlotRace(a);
+}
+
+router.post('/:id/reschedule', body(rescheduleSchema), async (req, res) => {
+  const a = await loadFor(req, req.params.id);
+  const isStudent = req.user.role === 'student';
+  if (!['pending', 'confirmed'].includes(a.status)) throw conflict('This booking can’t be rescheduled in its current state.', 'STATE_CHANGED');
+  const counsellor = await User.findById(a.counsellor._id);
+  const check = await assertSlotFree(counsellor, req.body.start, { excludeId: a._id });
+  if (!check.ok) throw conflict(SLOT_MESSAGES[check.reason] || SLOT_MESSAGES.booked, 'SLOT_TAKEN');
+  const newStart = new Date(check.slot.start);
+  const newEnd = new Date(check.slot.end);
+  const other = isStudent ? a.counsellor : a.student;
+
+  if (isStudent && a.status === 'pending') {
+    // Not yet confirmed: simply move the request — still one booking, still pending.
+    a.start = newStart; a.end = newEnd;
+    a.history.push({ status: 'pending_moved', label: 'Time changed by student', by: 'student' });
+    await saveHandlingSlotRace(a);
+    await notify(other, { type: 'reschedule', title: 'Request time changed', body: `${req.user.name} moved their request to ${T.fmtDateTime(newStart)}.`, icon: 'update', tone: 'blue', link: { screen: 'request', id: a.id } });
+  } else {
+    a.proposal = { start: newStart, end: newEnd, reason: req.body.reason, by: isStudent ? 'student' : 'counsellor', at: new Date() };
+    a.status = isStudent ? 'reschedule_requested' : 'reschedule_proposed';
+    a.history.push({ status: a.status, label: isStudent ? 'Reschedule requested' : 'New time proposed', by: req.user.role });
+    await a.save();
+    await notify(other, {
+      type: 'reschedule',
+      title: isStudent ? 'Reschedule requested' : 'New time proposed',
+      body: `${req.user.name}: ${T.fmtDateTime(newStart)}${req.body.reason ? ` — “${req.body.reason}”` : ''}`,
+      icon: 'update', tone: 'blue', link: { screen: isStudent ? 'request' : 'appointment', id: a.id },
+    });
+  }
+  res.json({ appointment: out(req, a) });
+});
+
+// Student answers a counsellor's proposal.
+router.post('/:id/proposal', requireRole('student'), body(z.object({ accept: z.boolean() })), async (req, res) => {
+  const a = await loadFor(req, req.params.id);
+  if (a.status !== 'reschedule_proposed') throw conflict('There’s no pending proposal for this booking.', 'STATE_CHANGED');
+  if (req.body.accept) {
+    await applyProposal(a, 'student');
+    await notify(a.counsellor, { type: 'reschedule', title: 'Reschedule accepted', body: `${req.user.name} moved to ${T.fmtDateTime(a.start)}`, icon: 'update', tone: 'blue', link: { screen: 'appointment', id: a.id } });
+  } else {
+    a.status = 'confirmed';
+    a.proposal = undefined;
+    a.history.push({ status: 'confirmed', label: 'Proposal declined — original time kept', by: 'student' });
+    await a.save();
+    await notify(a.counsellor, { type: 'reschedule', title: 'Proposal declined', body: `${req.user.name} kept the original time, ${T.fmtDateTime(a.start)}`, icon: 'update', tone: 'amber', link: { screen: 'appointment', id: a.id } });
+  }
+  res.json({ appointment: out(req, a) });
+});
 
 // ---------- Cancel ----------
 router.post('/:id/cancel', body(z.object({ reason: z.string().trim().max(500).optional().default('') })), async (req, res) => {
@@ -169,6 +299,13 @@ router.post('/:id/cancel', body(z.object({ reason: z.string().trim().max(500).op
     type: 'cancel', title: isStudent ? 'Booking cancelled by student' : 'Session cancelled',
     body: `${T.fmtDateTime(a.start)}${req.body.reason ? ` — “${req.body.reason}”` : ''}`, icon: 'event_busy', tone: 'red', link: { screen: 'appointment', id: a.id },
   });
+  res.json({ appointment: out(req, a) });
+});
+
+router.patch('/:id/reminders', requireRole('student'), body(z.object({ on: z.boolean() })), async (req, res) => {
+  const a = await loadFor(req, req.params.id);
+  a.remindersOn = req.body.on;
+  await a.save();
   res.json({ appointment: out(req, a) });
 });
 
