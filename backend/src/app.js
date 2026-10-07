@@ -34,6 +34,7 @@ app.use('/api/staff', require('./routes/staff'));
 app.use('/api/mood/journal', require('./routes/journal'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/wellness', require('./routes/wellness'));
+app.use('/api/music', require('./routes/music'));
 app.use('/api/doctor', require('./routes/doctor'));
 app.use('/api/admin/reports', require('./routes/reports'));
 app.use('/api/download', require('./routes/downloads'));
