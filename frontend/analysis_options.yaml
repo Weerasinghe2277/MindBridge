@@ -1,0 +1,7 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Pages pass their content blocks before footer actions, matching the design's reading order.
+    sort_child_properties_last: false
+    curly_braces_in_flow_control_structures: false
