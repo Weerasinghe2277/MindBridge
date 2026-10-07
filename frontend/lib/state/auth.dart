@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/api.dart';
 
@@ -14,8 +15,9 @@ class LoginStep {
   final String? devOtp;
 }
 
-/// Nothing is saved on the device: the sign-in token lives in memory only, so closing the
-/// app signs the user out (all data stays on the server). Onboarding shows once per app launch.
+/// No personal data is saved on the device: the sign-in token lives in memory only, so closing
+/// the app signs the user out (all data stays on the server). The only thing kept on the device is
+/// whether onboarding has been seen, so it shows once per install rather than on every launch.
 class AuthState extends ChangeNotifier {
   AuthStatus status = AuthStatus.unknown;
 
@@ -49,16 +51,26 @@ class AuthState extends ChangeNotifier {
     };
   }
 
+  static const _onboardingKey = 'onboarding_seen';
+
   Future<void> init() async {
     api.onSessionExpired = (e) => _expire(e.message);
+    try {
+      onboardingSeen = (await SharedPreferences.getInstance()).getBool(_onboardingKey) ?? false;
+    } catch (_) {} // storage unavailable: show onboarding again, nothing else depends on it
     await _loadConfig();
     status = AuthStatus.signedOut;
     notifyListeners();
   }
 
   Future<void> markOnboardingSeen() async {
-    onboardingSeen = true;
-    notifyListeners();
+    if (!onboardingSeen) {
+      onboardingSeen = true;
+      notifyListeners();
+    }
+    try {
+      await (await SharedPreferences.getInstance()).setBool(_onboardingKey, true);
+    } catch (_) {}
   }
 
   Future<LoginStep> login(String email, String password) async {
@@ -85,6 +97,7 @@ class AuthState extends ChangeNotifier {
     expiredMessage = null;
     status = AuthStatus.signedIn;
     _loadConfig();
+    markOnboardingSeen(); // anyone who has signed in skips onboarding from now on
     notifyListeners();
   }
 
