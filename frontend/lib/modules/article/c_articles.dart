@@ -1,11 +1,13 @@
 // MEMBER 4 — Article Management: counsellor creates, updates, submits and deletes articles,
 // and adds a cover image (uploaded to Cloudinary through the API).
-import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../core/api.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
+import '../../widgets/image_adjust.dart';
 import '../../widgets/page.dart';
 import '../../widgets/ui.dart';
 import 'articles.dart';
@@ -194,17 +196,27 @@ class ArticlePreviewScreen extends StatelessWidget {
           final coverUrl = a['coverUrl'] as String?;
           final canChangeCover = status == 'draft' || status == 'rejected';
 
-          Future<void> pickCover() async {
-            final f = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp']);
-            if (f == null || !context.mounted) return;
-            final bytes = await f.readAsBytes();
-            if (!context.mounted) return;
-            if (bytes.length > 5 * 1024 * 1024) return toast(context, 'Images must be 5 MB or smaller.');
-            final r = await guard(context, () => api.upload('/articles/$id/cover', bytes: bytes, filename: f.name, method: 'PUT'));
+          // Every cover goes through the editor, so it's framed the way it shows in the Wellness hub.
+          Future<void> uploadCover(Uint8List bytes) async {
+            final edited = await adjustImage(context, bytes: bytes, shape: CropShape.wide, title: 'Adjust cover');
+            if (edited == null || !context.mounted) return;
+            final r = await guard(context, () => api.upload('/articles/$id/cover', bytes: edited, filename: 'cover.png', method: 'PUT'));
             if (r != null && context.mounted) {
               toast(context, 'Cover updated.');
               await reload();
             }
+          }
+
+          Future<void> pickCover() async {
+            final bytes = await pickImageBytes(context);
+            if (bytes != null && context.mounted) await uploadCover(bytes);
+          }
+
+          Future<void> adjustCover() async {
+            final bytes = await downloadImage(coverUrl!);
+            if (!context.mounted) return;
+            if (bytes == null) return toast(context, 'Couldn’t open the cover. Check your connection.');
+            await uploadCover(bytes);
           }
 
           Future<void> removeCover() async {
@@ -244,6 +256,7 @@ class ArticlePreviewScreen extends StatelessWidget {
               if (canChangeCover)
                 ButtonGroup([
                   MbButton(coverUrl == null ? 'Add cover photo' : 'Change cover', kind: BtnKind.soft, icon: 'add_photo_alternate', onPressed: pickCover),
+                  if (coverUrl != null) MbButton('Adjust cover', kind: BtnKind.secondary, icon: 'crop', onPressed: adjustCover),
                   if (coverUrl != null) MbButton('Remove cover', kind: BtnKind.ghost, icon: 'hide_image', onPressed: removeCover),
                 ]),
               Txt(shown['title'] as String, size: TxtSize.xl),

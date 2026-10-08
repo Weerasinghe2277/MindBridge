@@ -85,7 +85,7 @@ router.get('/doctors', requireRole('counsellor'), async (req, res) => {
   const out = [];
   for (const d of docs) {
     const open = await Referral.countDocuments({ doctor: d._id, status: 'new' });
-    out.push({ id: d.id, name: d.name, initials: d.initials, title: d.professional?.title, office: d.professional?.office || 'University Medical Centre', openReferrals: open });
+    out.push({ id: d.id, name: d.name, initials: d.initials, photoUrl: d.photoUrl, title: d.professional?.title, office: d.professional?.office || 'University Medical Centre', openReferrals: open });
   }
   res.json({ doctors: out });
 });

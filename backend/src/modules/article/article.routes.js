@@ -21,7 +21,7 @@ const readMinutes = (text) => Math.max(1, Math.round(String(text || '').split(/\
 function out(a, { full = false, viewer } = {}) {
   const o = {
     id: a.id, title: a.title, category: a.category, status: a.status,
-    author: a.author?.name ? { id: a.author.id, name: a.author.name, title: a.author.professional?.title } : undefined,
+    author: a.author?.name ? { id: a.author.id, name: a.author.name, title: a.author.professional?.title, initials: a.author.initials, photoUrl: a.author.photoUrl } : undefined,
     readMinutes: readMinutes(a.body), reads: a.reads,
     excerpt: a.body.slice(0, 140), publishedAt: a.publishedAt, submittedAt: a.submittedAt, updatedAt: a.updatedAt,
     hasRevision: !!a.revision?.submittedAt,
@@ -40,7 +40,7 @@ router.get('/categories', (_req, res) => res.json({ categories: CATEGORIES }));
 router.get('/', async (req, res) => {
   const q = { status: 'published' };
   if (req.query.category && CATEGORIES.includes(req.query.category)) q.category = req.query.category;
-  let list = await Article.find(q).sort({ publishedAt: -1 }).populate('author', 'name professional');
+  let list = await Article.find(q).sort({ publishedAt: -1 }).populate('author', 'name professional photo');
   const s = String(req.query.q || '').trim().toLowerCase();
   if (s) list = list.filter((a) => `${a.title} ${a.category} ${a.body} ${a.author?.name}`.toLowerCase().includes(s));
   const counts = {};
@@ -49,13 +49,13 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/saved', requireRole('student'), async (req, res) => {
-  const list = await Article.find({ _id: { $in: req.user.savedArticles }, status: 'published' }).populate('author', 'name professional');
+  const list = await Article.find({ _id: { $in: req.user.savedArticles }, status: 'published' }).populate('author', 'name professional photo');
   res.json({ articles: list.map((a) => out(a)) });
 });
 
 // Counsellor's own articles — must come before "/:id".
 router.get('/mine', requireRole('counsellor'), requireVerified, async (req, res) => {
-  const list = await Article.find({ author: req.user._id, status: { $ne: 'removed' } }).sort({ updatedAt: -1 }).populate('author', 'name professional');
+  const list = await Article.find({ author: req.user._id, status: { $ne: 'removed' } }).sort({ updatedAt: -1 }).populate('author', 'name professional photo');
   const stats = {
     published: list.filter((a) => a.status === 'published').length,
     in_review: list.filter((a) => a.status === 'in_review' || a.revision?.submittedAt).length,
@@ -66,7 +66,7 @@ router.get('/mine', requireRole('counsellor'), requireVerified, async (req, res)
 
 async function loadArticle(id) {
   if (!isValidId(id)) throw notFound('Article not found.');
-  const a = await Article.findById(id).populate('author', 'name professional');
+  const a = await Article.findById(id).populate('author', 'name professional photo');
   if (!a) throw notFound('Article not found.');
   return a;
 }
@@ -79,7 +79,7 @@ router.get('/:id', async (req, res) => {
     await Article.updateOne({ _id: a._id }, { $inc: { reads: 1 } });
     await WellnessEvent.create({ user: req.user._id, kind: 'article_read', detail: a.category });
   }
-  const related = await Article.find({ status: 'published', category: a.category, _id: { $ne: a._id } }).limit(3).populate('author', 'name professional');
+  const related = await Article.find({ status: 'published', category: a.category, _id: { $ne: a._id } }).limit(3).populate('author', 'name professional photo');
   res.json({
     article: out(a, { full: true, viewer: req.user }),
     saved: (req.user.savedArticles || []).some((x) => x.equals(a._id)),
@@ -102,7 +102,7 @@ const articleSchema = z.object({
 
 router.post('/', requireRole('counsellor'), requireVerified, body(articleSchema), async (req, res) => {
   const a = await Article.create({ ...req.body, author: req.user._id, status: 'draft' });
-  await a.populate('author', 'name professional');
+  await a.populate('author', 'name professional photo');
   res.status(201).json({ article: out(a, { full: true, viewer: req.user }) });
 });
 

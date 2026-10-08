@@ -38,7 +38,7 @@ class CounsellorAccountScreen extends StatelessWidget {
             await reload();
           },
           children: [
-            ProfileHeader(initials: u['initials'] as String? ?? '', name: u['name'] as String? ?? '', sub: [p['title'], if (p['experienceYears'] != null) '${p['experienceYears']} years'].whereType<String>().join(' · '), badge: 'Verified counsellor'),
+            ProfileHeader(initials: u['initials'] as String? ?? '', photoUrl: u['photoUrl'] as String?, editable: true, onAvatarTap: () => changeProfilePhoto(context), name: u['name'] as String? ?? '', sub: [p['title'], if (p['experienceYears'] != null) '${p['experienceYears']} years'].whereType<String>().join(' · '), badge: 'Verified counsellor'),
             StatsGrid(cols: 3, [
               StatItem('${d['sessions']}', 'Sessions'),
               StatItem('${d['articles']}', 'Articles'),

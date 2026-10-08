@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 const _icons = <String, IconData>{
   'add': Symbols.add_rounded,
   'add_photo_alternate': Symbols.add_photo_alternate_rounded,
+  'adjust': Symbols.adjust_rounded,
   'admin_panel_settings': Symbols.admin_panel_settings_rounded,
   'ads_click': Symbols.ads_click_rounded,
   'air': Symbols.air_rounded,
@@ -45,6 +46,7 @@ const _icons = <String, IconData>{
   'cloud_off': Symbols.cloud_off_rounded,
   'code': Symbols.code_rounded,
   'content_copy': Symbols.content_copy_rounded,
+  'crop': Symbols.crop_rounded,
   'crop_square': Symbols.crop_square_rounded,
   'csv': Symbols.csv_rounded,
   'dashboard': Symbols.dashboard_rounded,
@@ -80,6 +82,7 @@ const _icons = <String, IconData>{
   'feedback': Symbols.feedback_rounded,
   'female': Symbols.female_rounded,
   'fingerprint': Symbols.fingerprint_rounded,
+  'fit_screen': Symbols.fit_screen_rounded,
   'forest': Symbols.forest_rounded,
   'forum': Symbols.forum_rounded,
   'function': Symbols.function_rounded,
@@ -144,6 +147,9 @@ const _icons = <String, IconData>{
   'person_search': Symbols.person_search_rounded,
   'phone': Symbols.phone_rounded,
   'phonelink_lock': Symbols.phonelink_lock_rounded,
+  'photo_camera': Symbols.photo_camera_rounded,
+  'photo_size_select_large': Symbols.photo_size_select_large_rounded,
+  'photo_size_select_small': Symbols.photo_size_select_small_rounded,
   'picture_as_pdf': Symbols.picture_as_pdf_rounded,
   'play_arrow': Symbols.play_arrow_rounded,
   'priority': Symbols.priority_rounded,
@@ -153,6 +159,7 @@ const _icons = <String, IconData>{
   'publish': Symbols.publish_rounded,
   'refresh': Symbols.refresh_rounded,
   'reminder': Symbols.reminder_rounded,
+  'remove': Symbols.remove_rounded,
   'replay': Symbols.replay_rounded,
   'reply': Symbols.reply_rounded,
   'report': Symbols.report_rounded,
@@ -211,6 +218,7 @@ const _icons = <String, IconData>{
   'water_drop': Symbols.water_drop_rounded,
   'wb_sunny': Symbols.wb_sunny_rounded,
   'wifi_off': Symbols.wifi_off_rounded,
+  'zoom_out_map': Symbols.zoom_out_map_rounded,
 };
 
 /// Material Symbols Rounded icon by name (names come from the design and the API).

@@ -48,6 +48,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
 
         ListItemData item(Appointment a) => ListItemData(
               avatar: a.counsellor['initials'] as String? ?? '',
+              avatarUrl: a.counsellor['photoUrl'] as String?,
               title: a.counsellorName,
               sub: '${Fmt.dateTime(a.start)} · ${a.modeLabel}',
               meta: a.isActive && a.remindersOn ? 'Reminder on' : null,
