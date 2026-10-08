@@ -105,6 +105,10 @@ void main() {
         child: MaterialApp(theme: buildTheme(), home: screen),
       ));
       await Future<void>.delayed(Duration(milliseconds: waitMs));
+      // Build once more in real time, so widgets that appear after the first load (and start
+      // their own requests) finish them here rather than leaving timers pending.
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
     });
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 600));
@@ -279,7 +283,7 @@ void main() {
     late String articleId;
     late Map<String, dynamic> dash;
     setUpAll(() async {
-      auth = await asRole('malsha.g@sliit.lk');
+      auth = await asRole('mindbrige.support@gmail.com');
       userId = ((await raw('GET', '/admin/users?role=student', token: api.token))['users'] as List).first['id'] as String;
       appId = ((await raw('GET', '/admin/verifications?status=pending', token: api.token))['applications'] as List).first['id'] as String;
       articleId = ((await raw('GET', '/admin/articles?status=waiting', token: api.token))['articles'] as List).first['id'] as String;

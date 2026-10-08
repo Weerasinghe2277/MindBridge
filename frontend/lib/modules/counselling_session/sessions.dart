@@ -244,7 +244,7 @@ class _SessionNotesScreenState extends State<SessionNotesScreen> {
                     });
                   }),
                 ]),
-                ToggleTile(title: 'Recommend referral to Medical Centre', value: _refer, onChanged: (v) => setState(() => _refer = v)),
+                if (!widget.appointment.anonymous) ToggleTile(title: 'Recommend referral to Medical Centre', value: _refer, onChanged: (v) => setState(() => _refer = v)),
               ],
         foot: [MbButton(widget.completeAfterSave ? 'Save notes and end session' : (_saveError != null ? 'Retry save' : 'Save notes'), loading: _busy, onPressed: _loading ? null : _save)],
       );
@@ -264,11 +264,11 @@ class SessionCompletedScreen extends StatelessWidget {
     return MbPage(
       bg: PageBg.white,
       children: [
-        StateView(icon: 'task_alt', title: 'Session completed', text: 'Notes saved and encrypted. ${appointment.studentName.split(' ').first} can book a follow-up whenever they’re ready.'),
-        KvCard([('Duration', '${mins.clamp(1, 600)} min'), ('Notes', 'Saved'), ('Sessions together', '$sessions')]),
+        StateView(icon: 'task_alt', title: 'Session completed', text: 'Notes saved and encrypted. ${appointment.anonymous ? 'The student' : appointment.studentName.split(' ').first} can book a follow-up whenever they’re ready.'),
+        KvCard([('Duration', '${mins.clamp(1, 600)} min'), ('Notes', 'Saved'), if (!appointment.anonymous) ('Sessions together', '$sessions')]),
       ],
       foot: [
-        MbButton('Refer to doctor', kind: refer ? BtnKind.primary : BtnKind.secondary, icon: 'local_hospital', onPressed: () => replace(context, ReferDoctorScreen(appointment: appointment), root: true, name: 'refer')),
+        if (!appointment.anonymous) MbButton('Refer to doctor', kind: refer ? BtnKind.primary : BtnKind.secondary, icon: 'local_hospital', onPressed: () => replace(context, ReferDoctorScreen(appointment: appointment), root: true, name: 'refer')),
         MbButton('Back to dashboard', kind: refer ? BtnKind.secondary : BtnKind.primary, onPressed: () => popToFirst(context, root: true)),
       ],
     );
@@ -286,12 +286,19 @@ class StudentInfoScreen extends StatelessWidget {
         wrap: (c) => MbPage(title: 'Student', children: [c]),
         builder: (context, d, reload) {
           final s = d['student'] as Map<String, dynamic>;
+          if (d['anonymous'] == true) {
+            return MbPage(title: 'Student', children: [
+              ProfileHeader(initials: s['initials'] as String, name: s['name'] as String, sub: studentDetailsLine(s)),
+              const AnonymousBookingBanner(),
+              const ChecksCard(title: 'Hidden for this booking', [(false, 'Name, student ID and faculty'), (false, 'Phone and email'), (false, 'Past sessions with you'), (false, 'Mood trends and journal')]),
+            ]);
+          }
           final sessions = d['sessions'] as Map<String, dynamic>;
           final trend = (d['moodTrend'] as List?)?.cast<Map<String, dynamic>>();
           return MbPage(
             title: 'Student',
             children: [
-              ProfileHeader(initials: s['initials'] as String, name: s['name'] as String, sub: [s['studentId'], (s['faculty'] as String?)?.replaceFirst('Faculty of ', ''), if (s['year'] != null) 'Year ${s['year']}'].whereType<String>().join(' · ')),
+              ProfileHeader(initials: s['initials'] as String, name: s['name'] as String, sub: studentDetailsLine(s)),
               const BannerCard(icon: 'shield', title: 'Limited view', text: 'You see booking information only. Mood check-ins stay private unless the student shares them.'),
               KvCard([
                 ('Sessions with you', '${sessions['completed']} completed · ${sessions['upcoming']} upcoming'),
@@ -305,5 +312,18 @@ class StudentInfoScreen extends StatelessWidget {
             ],
           );
         },
+      );
+}
+
+/// Shown to counsellors on anonymous bookings.
+class AnonymousBookingBanner extends StatelessWidget {
+  const AnonymousBookingBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) => const BannerCard(
+        tone: Tone.lilac,
+        icon: 'visibility_off',
+        title: 'Anonymous booking',
+        text: 'The student chose not to share their details for this online session. Please don’t ask for their name or ID. Referrals aren’t available for anonymous sessions.',
       );
 }

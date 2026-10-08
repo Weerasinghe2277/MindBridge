@@ -28,26 +28,55 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _passwordError;
   String? _formError;
   bool _busy = false;
+  bool _unlocking = false;
+
+  /// The fingerprint / face prompt opens by itself once per app launch.
+  static bool _autoPrompted = false;
 
   static const _demo = {
     null: 'it23714052@my.sliit.lk',
     'counsellor': 'hasini.k@sliit.lk',
     'doctor': 'ruwan.d@sliit.lk',
-    'admin': 'malsha.g@sliit.lk',
+    'admin': 'mindbrige.support@gmail.com',
   };
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showExpired());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_showExpired()) _autoUnlock();
+    });
   }
 
-  void _showExpired() {
+  void _autoUnlock() {
+    if (_autoPrompted || widget.staff != null || !context.read<AuthState>().quickUnlockOn) return;
+    _autoPrompted = true;
+    _unlock();
+  }
+
+  Future<void> _unlock() async {
+    if (_unlocking) return;
+    setState(() {
+      _unlocking = true;
+      _formError = null;
+    });
+    try {
+      await context.read<AuthState>().unlockWithDevice();
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _formError = e.message);
+    } finally {
+      if (mounted) setState(() => _unlocking = false);
+    }
+  }
+
+  /// Shows the "you've been signed out" sheet if there is one; returns whether it did.
+  bool _showExpired() {
     final auth = context.read<AuthState>();
     final msg = auth.expiredMessage;
-    if (msg == null || widget.staff != null) return;
+    if (msg == null || widget.staff != null) return false;
     auth.expiredMessage = null;
     showMbSheet(context, icon: 'lock_clock', tone: Tone.amber, title: 'You’ve been signed out', text: msg, actions: const [SheetAction('Sign in again')]);
+    return true;
   }
 
   @override
@@ -84,6 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final staff = widget.staff;
+    final auth = context.watch<AuthState>();
     final title = staff == null ? 'Welcome back' : (staff == 'admin' ? 'MindBridge Admin' : 'MindBridge Staff');
     final sub = switch (staff) {
       'counsellor' => 'Counsellor sign in',
@@ -96,6 +126,11 @@ class _LoginScreenState extends State<LoginScreen> {
       bg: PageBg.white,
       children: [
         LogoBlock(title: title, sub: sub),
+        if (auth.quickUnlockOn) ...[
+          MbButton(auth.quickUnlockName == null ? 'Quick unlock' : 'Unlock as ${auth.quickUnlockName}', icon: 'fingerprint', loading: _unlocking, onPressed: _unlock),
+          Center(child: Text('Use your fingerprint, face, pattern or PIN', style: Ty.nunito(size: 12.5, color: C.muted))),
+          const DividerText('or sign in with your password'),
+        ],
         AutofillGroup(
           child: Column(children: [
             MbField(label: staff == null ? 'University email' : 'Staff email', controller: _email, icon: 'mail', type: FieldType.email, hint: staff == null ? 'it12345678@my.sliit.lk' : 'name@sliit.lk', error: _emailError, autofill: const [AutofillHints.email, AutofillHints.username], textInputAction: TextInputAction.next),

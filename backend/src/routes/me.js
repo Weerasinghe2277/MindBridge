@@ -52,8 +52,11 @@ router.post('/password', body(z.object({ current: z.string().min(1, 'Enter your 
   if (req.body.current === req.body.next) throw badRequest('Choose a password you haven’t used here before.', 'VALIDATION_ERROR', { field: 'next' });
   await u.setPassword(req.body.next);
   await u.save();
-  // Sign out every other device.
+  // Sign out every other device and turn off quick unlock everywhere (the app sets it up
+  // again on this phone if it was on).
   await M.AuthSession.updateMany({ user: u._id, _id: { $ne: req.session._id } }, { revoked: true });
+  await M.QuickUnlockKey.deleteMany({ user: u._id });
+  await User.updateOne({ _id: u._id }, { 'privacy.biometricUnlock': false });
   res.json({ updated: true });
 });
 
@@ -121,7 +124,7 @@ router.delete('/', body(z.object({ password: z.string().min(1, 'Enter your passw
   await Promise.all([
     M.MoodEntry.deleteMany({ student: u._id }), M.JournalEntry.deleteMany({ student: u._id }),
     M.ChatMessage.deleteMany({ student: u._id }), M.Notification.deleteMany({ user: u._id }),
-    M.AuthSession.deleteMany({ user: u._id }),
+    M.AuthSession.deleteMany({ user: u._id }), M.QuickUnlockKey.deleteMany({ user: u._id }),
   ]);
   await audit(null, 'users', 'Student account deleted by owner', u.studentId || '');
   await u.deleteOne();

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <!-- Onboarding 3 · Privacy (Tone.lilac). A student journaling inside a shield; help is one tap away. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ECE8F7"/><stop offset="1" stop-color="#F6F2EA"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCD5F2"/><stop offset="1" stop-color="#F5F2FB"/>
+    </linearGradient>
+    <g id="leaf"><path d="M0 0 C18 -26 56 -26 68 0 C56 26 18 26 0 0 Z"/><path d="M4 0 H60" stroke="#FFFDF9" stroke-opacity=".55" stroke-width="3" fill="none"/></g>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="1010" cy="110" r="330" fill="#58479A" opacity=".06"/>
+  <circle cx="120" cy="790" r="270" fill="#58479A" opacity=".05"/>
+
+  <!-- ground -->
+  <path d="M0 650 Q600 590 1200 650 V800 H0 Z" fill="#C5D7B3"/>
+  <path d="M0 720 Q560 680 1200 724 V800 H0 Z" fill="#B8D39A"/>
+
+  <!-- shield -->
+  <ellipse cx="600" cy="676" rx="200" ry="16" fill="#2F5A3D" opacity=".14"/>
+  <path d="M600 92 L838 178 V380 C838 530 740 620 600 676 C460 620 362 530 362 380 V178 Z" fill="url(#shield)" stroke="#58479A" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M600 132 L800 204 V380 C800 506 718 584 600 634 C482 584 400 506 400 380 V204 Z" fill="none" stroke="#58479A" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round" opacity=".45"/>
+
+  <!-- padlock badge -->
+  <circle cx="830" cy="170" r="52" fill="#58479A"/>
+  <circle cx="830" cy="170" r="52" fill="none" stroke="#FFFDF9" stroke-width="6"/>
+  <g transform="translate(800 138) scale(2.5)" fill="#FFFDF9">
+    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+  </g>
+  <circle cx="830" cy="182" r="6" fill="#58479A"/>
+
+  <!-- student journaling, cross-legged -->
+  <ellipse cx="600" cy="590" rx="120" ry="12" fill="#2F5A3D" opacity=".14"/>
+  <rect x="500" y="532" width="200" height="56" rx="28" fill="#2F5A3D"/>
+  <path d="M524 560 Q600 600 676 560" stroke="#3A6647" stroke-width="18" fill="none" stroke-linecap="round"/>
+  <rect x="556" y="408" width="88" height="140" rx="38" fill="#4A7C59"/>
+  <rect x="589" y="380" width="22" height="34" rx="9" fill="#B47A55"/>
+  <circle cx="600" cy="352" r="38" fill="#C68B64"/>
+  <path d="M562 360 C552 316 590 298 618 306 C646 312 652 340 640 358 C640 386 646 404 652 420 C634 410 632 380 634 356 C622 340 596 336 574 344 C568 360 566 380 560 400 C552 386 556 370 562 360 Z" fill="#2F2A24"/>
+  <path d="M584 360 q6 5 12 0 M606 360 q6 5 12 0" stroke="#2F2A24" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M592 376 q8 6 16 0" stroke="#8A4E35" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- journal -->
+  <path d="M520 512 L598 526 L598 470 L520 456 Z" fill="#FFFDF9"/>
+  <path d="M680 512 L602 526 L602 470 L680 456 Z" fill="#FFFDF9"/>
+  <path d="M516 516 L600 532 L684 516" stroke="#58479A" stroke-width="7" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+  <g stroke="#DCD5F2" stroke-width="4" stroke-linecap="round"><path d="M534 476 L584 485 M534 492 L578 500"/><path d="M616 485 L666 476 M616 500 L652 494"/></g>
+  <path d="M566 428 L548 488" stroke="#4A7C59" stroke-width="24" stroke-linecap="round"/>
+  <path d="M634 428 L650 478" stroke="#4A7C59" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="548" cy="494" r="12" fill="#C68B64"/>
+  <circle cx="650" cy="484" r="12" fill="#C68B64"/>
+  <path d="M652 482 L676 446" stroke="#E9A84A" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- heart -->
+  <g transform="translate(200 120) scale(3.4) rotate(-10 12 12)" fill="#E58F7E">
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+  </g>
+
+  <!-- helpline: one tap away -->
+  <circle cx="950" cy="440" r="90" fill="#4A7C59" opacity=".12"/>
+  <circle cx="950" cy="440" r="64" fill="#4A7C59"/>
+  <circle cx="950" cy="440" r="64" fill="none" stroke="#FFFDF9" stroke-width="6"/>
+  <g transform="translate(920 410) scale(2.5)" fill="#FFFDF9">
+    <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+  </g>
+  <g fill="none" stroke="#4A7C59" stroke-width="6" stroke-linecap="round" opacity=".5">
+    <path d="M1036 400 q20 40 0 80"/><path d="M1060 384 q30 56 0 112"/>  </g>
+
+  <!-- leaves and sparkles -->
+  <use href="#leaf" fill="#4A7C59" transform="translate(220 560) rotate(-35)"/>
+  <use href="#leaf" fill="#B8D39A" transform="translate(250 590) rotate(-75) scale(.85)"/>
+  <use href="#leaf" fill="#6E9E6F" transform="translate(1000 640) rotate(-140) scale(.8)"/>
+  <g fill="#58479A" opacity=".45">
+    <path d="M250 250 l7 18 l18 7 l-18 7 l-7 18 l-7 -18 l-18 -7 l18 -7 Z"/>
+    <path d="M1040 250 l5 13 l13 5 l-13 5 l-5 13 l-5 -13 l-13 -5 l13 -5 Z"/>
+    <path d="M300 420 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4 Z"/>
+  </g>
+</svg>

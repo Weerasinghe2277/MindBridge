@@ -156,7 +156,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
         ]),
         const ChecksCard(title: 'Administrators can see', [(true, 'Anonymous usage totals'), (false, 'Any booking or session details')]),
         ToggleTile(title: 'Share mood trends with my counsellor', sub: 'Off by default. Shares weekly averages only — never notes or your journal.', value: p['shareMoodTrends'] == true, onChanged: (v) => _set('shareMoodTrends', v)),
-        ToggleTile(title: 'Biometric unlock', sub: 'Use fingerprint or face to open MindBridge on this phone', value: p['biometricUnlock'] == true, onChanged: (v) => _set('biometricUnlock', v)),
+        const QuickUnlockTile(),
         ToggleTile(title: 'Hide notification previews', sub: 'Shows “MindBridge update” on the lock screen', value: p['hidePreviews'] != false, onChanged: (v) => _set('hidePreviews', v)),
         const SectionHeader('Signed-in devices'),
         const ActiveSessionsCard(),

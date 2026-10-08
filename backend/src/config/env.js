@@ -34,8 +34,11 @@ const env = {
   staffEmailDomains: (process.env.STAFF_EMAIL_DOMAINS || 'sliit.lk').split(',').map((s) => s.trim().toLowerCase()),
   // Fixed Sri Lanka offset (no daylight saving) — all schedules are in local time (GMT+5:30).
   tzOffsetMinutes: 330,
-  anthropicKey: process.env.ANTHROPIC_API_KEY || '',
-  bridgeModel: process.env.BRIDGE_MODEL || 'claude-opus-5-5',
+  // Bridge assistant (Google Gemini). Key from https://aistudio.google.com/apikey
+  geminiKey: process.env.GEMINI_API_KEY || '',
+  bridgeModel: process.env.BRIDGE_MODEL || 'gemini-flash-latest',
+  // Used when the main model is busy (high demand / rate limit).
+  bridgeFallbackModel: process.env.BRIDGE_FALLBACK_MODEL || 'gemini-flash-lite-latest',
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: parseInt(process.env.SMTP_PORT || '587', 10),

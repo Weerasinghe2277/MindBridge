@@ -294,7 +294,7 @@ class _CounsellorAppointmentScreenState extends State<CounsellorAppointmentScree
           } else if (a.status == 'completed') {
             foot = [
               MbButton('Session notes', kind: BtnKind.secondary, icon: 'edit_note', onPressed: () => push(context, SessionNotesScreen(appointment: a), root: true)),
-              MbButton('Refer to doctor', kind: BtnKind.ghost, icon: 'local_hospital', onPressed: () => push(context, ReferDoctorScreen(appointment: a), root: true, name: 'refer')),
+              if (!a.anonymous) MbButton('Refer to doctor', kind: BtnKind.ghost, icon: 'local_hospital', onPressed: () => push(context, ReferDoctorScreen(appointment: a), root: true, name: 'refer')),
             ];
           } else {
             foot = const [];
@@ -310,8 +310,9 @@ class _CounsellorAppointmentScreenState extends State<CounsellorAppointmentScree
                 badge: a.modeLabel,
                 badgeTone: Tone.blue,
                 title: a.studentName,
-                sub: [a.student['studentId'], (a.student['faculty'] as String?)?.replaceFirst('Faculty of ', ''), if (a.student['year'] != null) 'Year ${a.student['year']}'].whereType<String>().join(' · '),
+                sub: a.studentDetails,
               ),
+              if (a.anonymous) const AnonymousBookingBanner(),
               if (a.status == 'reschedule_proposed')
                 BannerCard(tone: Tone.blue, icon: 'update', title: 'Waiting for the student', text: 'You proposed ${Fmt.dateTime(Fmt.parse(a.proposal!['start']))}. Until they accept, the booking shows as “New time proposed” for both of you.'),
               KvCard([

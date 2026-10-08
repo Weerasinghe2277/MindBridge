@@ -191,7 +191,6 @@ class StaffSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
-    final privacy = (auth.user?['privacy'] as Map?)?.cast<String, dynamic>() ?? {};
     return MbPage(
       title: 'Settings',
       children: [
@@ -200,10 +199,7 @@ class StaffSettingsScreen extends StatelessWidget {
           MenuItemData('key', 'Change password', onTap: () => push(context, const ChangePasswordScreen(), root: true)),
           if (auth.role == 'counsellor') MenuItemData('schedule', 'Availability', onTap: () => push(context, const AvailabilityScreen())),
         ]),
-        ToggleTile(title: 'Biometric unlock', value: privacy['biometricUnlock'] == true, onChanged: (v) async {
-          final r = await guard(context, () => api.patch('/me/privacy', {'biometricUnlock': v}));
-          if (r != null && context.mounted) context.read<AuthState>().setUser(r['user'] as Map<String, dynamic>);
-        }),
+        const QuickUnlockTile(),
         const ToggleTile(title: 'Auto sign-out after 15 minutes', sub: 'Set by Student Affairs to protect session notes', value: true, locked: true),
         const SectionHeader('Signed-in devices'),
         const ActiveSessionsCard(),

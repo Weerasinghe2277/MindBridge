@@ -32,7 +32,7 @@ router.get('/dashboard', requireRole('counsellor'), async (req, res) => {
     Appointment.find({ counsellor: me, status: 'pending', 'duplicateOf.0': { $exists: true }, end: { $gt: now } }).populate(POP),
   ]);
   let nextSessionNumber = null;
-  if (next) nextSessionNumber = 1 + await Appointment.countDocuments({ counsellor: me, student: next.student._id, status: 'completed' });
+  if (next && !next.anonymous) nextSessionNumber = 1 + await Appointment.countDocuments({ counsellor: me, student: next.student._id, status: 'completed', anonymous: { $ne: true } });
   res.json({
     pendingCount: pending.length,
     todayCount: today.filter((a) => a.status !== 'completed').length,

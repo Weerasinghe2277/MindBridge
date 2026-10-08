@@ -13,7 +13,8 @@ async function main() {
   }
   const server = app.listen(env.port, '0.0.0.0', () => {
     console.log(`[api] MindBridge API listening on http://localhost:${env.port}/api`);
-    if (!env.anthropicKey) console.log('[api] ANTHROPIC_API_KEY not set — Bridge uses built-in supportive replies');
+    if (!env.geminiKey) console.log('[api] GEMINI_API_KEY not set — Bridge uses built-in supportive replies');
+    else console.log(`[api] Bridge uses Gemini (${env.bridgeModel})`);
     if (env.isProd && env.demoMode) console.warn('[api] DEMO_MODE is on: one-time codes are returned to the app. Turn it off before real students use MindBridge.');
   });
   const timer = startScheduler();

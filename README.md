@@ -65,11 +65,11 @@ The emulator reaches your computer's API at `10.0.2.2:4000` automatically. In de
 | Student | `it23714052@my.sliit.lk` | Pasindi Perera — has a pending booking, mood history and journal |
 | Counsellor | `hasini.k@sliit.lk` | Dr. Hasini Kalupahana — requests, today's sessions, a duplicate to resolve |
 | Doctor | `ruwan.d@sliit.lk` | Dr. Ruwan Dissanayake — a priority referral and consultations |
-| Admin | `malsha.g@sliit.lk` | Malsha Gunawardena — uses a sign-in code (two-factor) |
+| Admin | `mindbrige.support@gmail.com` | Malsha Gunawardena — uses a sign-in code (two-factor) |
 
 Without SMTP configured, one-time codes (email verification, password reset, admin sign-in) are printed in the API console **and shown inside the app** in a "Development mode" banner. Set `SMTP_*` in `.env` to send real emails; codes are never exposed when `NODE_ENV=production`.
 
-Optional: set `ANTHROPIC_API_KEY` to power the **Bridge** assistant with Claude. Without it Bridge uses built-in supportive replies. Crisis detection and the 1926 hand-off work either way.
+Optional: set `GEMINI_API_KEY` (free key from [Google AI Studio](https://aistudio.google.com/apikey)) to power the **Bridge** assistant with Google Gemini. Without it Bridge uses built-in supportive replies. Crisis detection and the 1926 hand-off work either way.
 
 ---
 
@@ -101,13 +101,13 @@ cd frontend && flutter test
 | FR7 | Detect duplicate bookings | Server blocks a second active booking (configurable). A unique index prevents two students taking one slot. Counsellors get a duplicate view. |
 | FR8 | One-tap 1926 helpline | SOS on Home and Wellness, press-and-hold for 5 s, dialler confirmation (`features/wellness/emergency.dart`) |
 | FR9 | Optional mood check-in | Check-in, calendar, history, insights, encrypted journal (`modules/mood/`, `routes/journal.js`) |
-| FR10 | AI wellness assistant with escalation | `services/bridge.js`: Claude with offline fallback; crisis messages never reach the model and switch to 1926 |
+| FR10 | AI wellness assistant with escalation | `services/bridge.js`: Google Gemini with offline fallback; crisis messages never reach the model and switch to 1926 |
 | FR11 | Admin verifies counsellors/doctors | Document upload, checklist, approve, reject, request changes; unverified staff are gated (`requireVerified`) |
 | FR12 | Anonymised reporting | `routes/reports.js`: every group under 10 is hidden; CSV/PDF export through one-time links |
 | NFR1 | Privacy | Role-based access on every route. Counsellors see bookings only; mood is shared only if the student opts in. Doctors see only what was shared. Admins never see content. |
 | NFR2 | Confidentiality | AES-256-GCM encryption at rest for session notes, clinical notes, journal, mood notes, booking notes and Bridge chats. Referral views are audited. |
 | NFR3 | Usability | Onboarding, step indicators, plain-language states and errors; design from the tested hi-fi prototype |
-| NFR4 | Security | bcrypt, JWT plus server-side sessions (revocable), inactivity sign-out (admin-configurable, mirrored on device), rate limiting, Helmet, input validation, NoSQL-injection stripping, no tokens in URLs, nothing stored on the device (the token is kept in memory only) |
+| NFR4 | Security | bcrypt, JWT plus server-side sessions (revocable), inactivity sign-out (admin-configurable, mirrored on device; with quick unlock on, the app locks instead and opens again with fingerprint, face, pattern or PIN), rate limiting, Helmet, input validation, NoSQL-injection stripping, no tokens in URLs, no personal data stored on the device (the token is kept in memory only; the device only remembers that onboarding was seen) |
 | NFR5 | Consistent status | Single source of truth for status and timeline; retries on network errors; offline states |
 | NFR6 | Fast check-in and booking | Check-in in about 3 taps; booking in 4 steps or 2 via a profile quick slot |
 

@@ -10,6 +10,10 @@ if (env.smtp.host) {
     port: env.smtp.port,
     secure: env.smtp.port === 465,
     auth: env.smtp.user ? { user: env.smtp.user, pass: env.smtp.pass } : undefined,
+    // Fail fast instead of keeping the student waiting if the mail server can't be reached.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 }
 
@@ -25,7 +29,13 @@ async function sendCode(email, purpose, code) {
     console.log(`[mail:dev] ${purpose} code for ${email}: ${code}`);
     return;
   }
-  await transport.sendMail({ from: env.smtp.from, to: email, subject: SUBJECT[purpose], text });
+  try {
+    await transport.sendMail({ from: env.smtp.from, to: email, subject: SUBJECT[purpose], text });
+  } catch (err) {
+    // Don't break sign-in if email is down (or blocked by the host). With DEMO_MODE the code still
+    // shows in the app, and the user can tap "Resend" once email is back.
+    console.error(`[mail] could not send ${purpose} code to ${email}: ${err.message}`);
+  }
 }
 
 module.exports = { sendCode };

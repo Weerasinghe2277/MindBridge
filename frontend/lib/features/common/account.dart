@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/api.dart';
 import '../../core/format.dart';
+import '../../core/quick_unlock.dart';
 import '../../core/theme.dart';
 import '../../state/auth.dart';
 import '../../widgets/page.dart';
@@ -42,6 +43,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() => _busy = true);
     try {
       await api.post('/me/password', {'current': _cur.text, 'next': _next.text});
+      if (!mounted) return;
+      // The server turns quick unlock off everywhere; set it up again for this phone if it was on.
+      try {
+        await context.read<AuthState>().renewQuickUnlock();
+      } catch (_) {}
       if (!mounted) return;
       Navigator.of(context).pop();
       toast(context, 'Password updated. Other devices have been signed out.');
@@ -123,4 +129,55 @@ Future<void> confirmSignOut(BuildContext context) async {
     }),
     const SheetAction('Cancel', kind: BtnKind.ghost),
   ]);
+}
+
+/// Quick unlock switch for this phone: sign in again with fingerprint, face, pattern or PIN.
+class QuickUnlockTile extends StatefulWidget {
+  const QuickUnlockTile({super.key});
+
+  @override
+  State<QuickUnlockTile> createState() => _QuickUnlockTileState();
+}
+
+class _QuickUnlockTileState extends State<QuickUnlockTile> {
+  late final Future<bool> _available = QuickUnlock.isAvailable();
+  bool _busy = false;
+
+  Future<void> _set(bool on) async {
+    if (_busy) return;
+    final auth = context.read<AuthState>();
+    setState(() => _busy = true);
+    try {
+      if (on) {
+        if (await auth.enableQuickUnlock() && mounted) toast(context, 'Quick unlock is on for this phone.');
+      } else {
+        await auth.disableQuickUnlock();
+        if (mounted) toast(context, 'Quick unlock is off. Sign in with your password next time.');
+      }
+    } on ApiException catch (e) {
+      if (mounted) toast(context, e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final on = context.watch<AuthState>().quickUnlockForMe;
+    return FutureBuilder<bool>(
+      future: _available,
+      builder: (context, snap) {
+        final available = snap.data ?? false;
+        return ToggleTile(
+          title: 'Quick unlock',
+          sub: available
+              ? 'Sign in with your fingerprint, face, pattern or PIN on this phone instead of your password. After inactivity the app locks instead of signing you out.'
+              : 'Set a screen lock (fingerprint, face, pattern or PIN) on this phone to use quick unlock',
+          value: on,
+          locked: !available && !on,
+          onChanged: _busy ? null : _set,
+        );
+      },
+    );
+  }
 }

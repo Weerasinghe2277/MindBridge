@@ -80,6 +80,7 @@ const _icons = <String, IconData>{
   'favorite_border': Symbols.favorite_border_rounded,
   'feedback': Symbols.feedback_rounded,
   'female': Symbols.female_rounded,
+  'fingerprint': Symbols.fingerprint_rounded,
   'forest': Symbols.forest_rounded,
   'forum': Symbols.forum_rounded,
   'function': Symbols.function_rounded,
