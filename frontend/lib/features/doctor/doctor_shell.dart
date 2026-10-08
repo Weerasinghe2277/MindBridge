@@ -216,7 +216,7 @@ class DoctorProfileScreen extends StatelessWidget {
       root: true,
       onRefresh: auth.refreshUser,
       children: [
-        ProfileHeader(initials: u['initials'] as String? ?? '', name: u['name'] as String? ?? '', sub: [p['title'], p['qualifications'], p['office'] ?? 'University Medical Centre'].whereType<String>().where((e) => e.isNotEmpty).join(' · '), badge: 'Verified doctor'),
+        ProfileHeader(initials: u['initials'] as String? ?? '', photoUrl: u['photoUrl'] as String?, editable: true, onAvatarTap: () => changeProfilePhoto(context), name: u['name'] as String? ?? '', sub: [p['title'], p['qualifications'], p['office'] ?? 'University Medical Centre'].whereType<String>().where((e) => e.isNotEmpty).join(' · '), badge: 'Verified doctor'),
         MenuCard([
           MenuItemData('person', 'Edit profile', onTap: () => push(context, const EditStaffProfileScreen(), root: true)),
           MenuItemData('schedule', 'Consultation hours', onTap: () => push(context, const AvailabilityScreen())),

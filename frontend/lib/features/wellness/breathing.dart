@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 
 import '../../core/api.dart';
 import '../../core/format.dart';
@@ -15,6 +17,47 @@ class BreathPhase {
   final String label;
   final int seconds;
   final double scale;
+
+  /// Vibration when this phase starts, different for each so it can be followed eyes closed:
+  /// one long pulse to breathe in, a light tick to hold, two short pulses to breathe out.
+  List<int> get buzz => switch (label) {
+        'Breathe in' => const [0, 300],
+        'Hold' => const [0, 60],
+        _ => const [0, 140, 120, 140],
+      };
+}
+
+/// Phone vibration for the breathing guide. Falls back to a haptic tap where a pattern
+/// isn't supported, and stays quiet if the phone can't vibrate.
+class BreathBuzz {
+  BreathBuzz._();
+  static const _prefKey = 'breathing_vibrate';
+  static bool? _hasVibrator;
+
+  static Future<bool> enabled() async {
+    try {
+      return (await SharedPreferences.getInstance()).getBool(_prefKey) ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static Future<void> setEnabled(bool on) async {
+    try {
+      await (await SharedPreferences.getInstance()).setBool(_prefKey, on);
+    } catch (_) {}
+  }
+
+  static Future<void> play(BreathPhase phase) async {
+    try {
+      _hasVibrator ??= await Vibration.hasVibrator();
+      if (_hasVibrator!) {
+        await Vibration.vibrate(pattern: phase.buzz);
+        return;
+      }
+    } catch (_) {}
+    HapticFeedback.mediumImpact();
+  }
 }
 
 enum BreathPattern {
@@ -77,23 +120,41 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
   int _t = 0;
   Timer? _timer;
   bool _paused = false;
+  bool _vibrate = true;
 
   BreathPattern get p => widget.pattern;
 
   @override
   void initState() {
     super.initState();
+    BreathBuzz.enabled().then((on) {
+      if (!mounted) return;
+      setState(() => _vibrate = on);
+      if (on) BreathBuzz.play(_phase.$1); // the first "Breathe in"
+    });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_paused) return;
       setState(() => _t++);
-      if (_phaseStart()) HapticFeedback.selectionClick();
-      if (_t >= p.seconds) _finish();
+      if (_t >= p.seconds) {
+        _finish();
+        return;
+      }
+      // Vibrate at every switch: in → hold → out → in …
+      if (_vibrate && _phaseStart()) BreathBuzz.play(_phase.$1);
     });
+  }
+
+  void _toggleVibrate() {
+    setState(() => _vibrate = !_vibrate);
+    BreathBuzz.setEnabled(_vibrate);
+    if (_vibrate) BreathBuzz.play(_phase.$1);
+    toast(context, _vibrate ? 'Vibration on — feel when to breathe in and out' : 'Vibration off');
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    Vibration.cancel().catchError((_) {});
     super.dispose();
   }
 
@@ -134,7 +195,10 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
     return MbPage(
       title: p.title,
       bg: PageBg.calm,
-      actions: [HeaderAction(_paused ? 'play_arrow' : 'pause', tooltip: _paused ? 'Resume' : 'Pause', onTap: () => setState(() => _paused = !_paused))],
+      actions: [
+        HeaderAction(_vibrate ? 'vibration' : 'mobile_off', tooltip: _vibrate ? 'Turn vibration off' : 'Turn vibration on', onTap: _toggleVibrate),
+        HeaderAction(_paused ? 'play_arrow' : 'pause', tooltip: _paused ? 'Resume' : 'Pause', onTap: () => setState(() => _paused = !_paused)),
+      ],
       children: [
         const SizedBox(height: 8),
         Center(
@@ -165,6 +229,7 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen> {
         Center(child: Text(_paused ? 'Paused' : ph.label, style: Ty.lora(size: 26))),
         Center(child: Text('Round $round · ${p.rhythm} · ${Fmt.mmss((p.seconds - _t).clamp(0, p.seconds))} left', style: Ty.nunito(size: 14, color: C.muted))),
         if (p == BreathPattern.bubble) const Txt('Breathe in as the bubble grows, out as it shrinks.', size: TxtSize.sm, align: TextAlign.center),
+        if (_vibrate) const Txt('You can close your eyes: one long buzz = breathe in, a light tick = hold, two short buzzes = breathe out.', size: TxtSize.sm, align: TextAlign.center),
       ],
       foot: [MbButton(widget.fromGame ? 'Finish' : 'End session', kind: widget.fromGame ? BtnKind.primary : BtnKind.secondary, onPressed: _finish)],
     );

@@ -18,6 +18,7 @@ const personLite = (u) => (u && u._id ? {
   id: u._id.toString(),
   name: u.name,
   initials: u.initials,
+  photoUrl: u.photoUrl || undefined,
   title: u.professional?.title,
   studentId: u.studentId,
   faculty: u.faculty,
@@ -106,7 +107,7 @@ function serialize(a, viewer) {
 // ---------- Shared by the appointment and counselling-session modules ----------
 const POP = [
   { path: 'student', select: 'name studentId faculty year role notificationPrefs' },
-  { path: 'counsellor', select: 'name professional role notificationPrefs' },
+  { path: 'counsellor', select: 'name professional role notificationPrefs photo' },
 ];
 
 // Loads an appointment the signed-in student or counsellor is part of; anyone else gets 404.

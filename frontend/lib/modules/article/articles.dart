@@ -197,7 +197,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               ArticleCover(url: a['coverUrl'] as String?, category: a['category'] as String?, height: 190),
               Tags([a['category'] as String, '${a['readMinutes']} min read']),
               Txt(a['title'] as String, size: TxtSize.xl),
-              Txt('${author['name'] ?? ''}${author['title'] != null ? ' · ${author['title']}' : ''} · Reviewed by Student Affairs', size: TxtSize.xs),
+              Row(children: [
+                if (author['initials'] != null) ...[Avatar(author['initials'] as String, size: 30, photoUrl: author['photoUrl'] as String?), const SizedBox(width: 10)],
+                Expanded(child: Txt('${author['name'] ?? ''}${author['title'] != null ? ' · ${author['title']}' : ''} · Reviewed by Student Affairs', size: TxtSize.xs)),
+              ]),
               for (final p in paras)
                 if (p.trim().split('\n').length > 1 && p.trim().split('\n').first.length < 40) ...[
                   SectionHeader(p.trim().split('\n').first),

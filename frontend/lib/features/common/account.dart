@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +8,7 @@ import '../../core/format.dart';
 import '../../core/quick_unlock.dart';
 import '../../core/theme.dart';
 import '../../state/auth.dart';
+import '../../widgets/image_adjust.dart';
 import '../../widgets/page.dart';
 import '../../widgets/ui.dart';
 import '../auth/forgot_password.dart';
@@ -179,5 +182,73 @@ class _QuickUnlockTileState extends State<QuickUnlockTile> {
         );
       },
     );
+  }
+}
+
+// ─────────────────────────── Profile photo (counsellors and doctors) ───────────────────────────
+
+/// Upload, adjust or remove the signed-in staff member's profile photo.
+Future<void> changeProfilePhoto(BuildContext context) async {
+  final auth = context.read<AuthState>();
+  final current = auth.user?['photoUrl'] as String?;
+  final who = auth.role == 'doctor' ? 'Students and counsellors see it on referrals and consultations.' : 'Students see it when they choose a counsellor and on your articles.';
+  final choice = await showMbSheet(
+    context,
+    icon: 'photo_camera',
+    title: 'Profile photo',
+    text: '$who Use a clear, friendly photo of your face.',
+    actions: [
+      const SheetAction('Upload a new photo', value: 'upload'),
+      if (current != null) const SheetAction('Adjust current photo', kind: BtnKind.secondary, value: 'adjust'),
+      if (current != null) const SheetAction('Remove photo', kind: BtnKind.dangerSoft, value: 'remove'),
+      const SheetAction('Cancel', kind: BtnKind.ghost, value: 'cancel'),
+    ],
+  );
+  if (!context.mounted) return;
+  switch (choice) {
+    case 'upload':
+      final bytes = await pickImageBytes(context);
+      if (bytes != null && context.mounted) await _adjustAndUpload(context, bytes);
+    case 'adjust':
+      final bytes = await _withProgress(context, 'Opening your photo…', () => downloadImage(current!));
+      if (!context.mounted) return;
+      if (bytes == null) return toast(context, 'Couldn’t open your current photo. Check your connection.');
+      await _adjustAndUpload(context, bytes);
+    case 'remove':
+      final r = await guard(context, () => api.delete('/me/photo'));
+      if (r != null && context.mounted) {
+        auth.setUser(r['user'] as Map<String, dynamic>);
+        toast(context, 'Photo removed. Your initials are shown instead.');
+      }
+  }
+}
+
+Future<void> _adjustAndUpload(BuildContext context, Uint8List bytes) async {
+  final auth = context.read<AuthState>();
+  final edited = await adjustImage(context, bytes: bytes, shape: CropShape.circle, title: 'Adjust profile photo');
+  if (edited == null || !context.mounted) return;
+  final r = await _withProgress(context, 'Saving your photo…', () => guard(context, () => api.upload('/me/photo', bytes: edited, filename: 'profile.png', method: 'PUT')));
+  if (r != null && context.mounted) {
+    auth.setUser(r['user'] as Map<String, dynamic>);
+    toast(context, 'Profile photo updated.');
+  }
+}
+
+/// Runs [work] behind a small "please wait" dialog.
+Future<T?> _withProgress<T>(BuildContext context, String message, Future<T?> Function() work) async {
+  final nav = Navigator.of(context, rootNavigator: true);
+  showDialog<void>(
+    context: context,
+    useRootNavigator: true,
+    barrierDismissible: false,
+    builder: (_) => PopScope(
+      canPop: false,
+      child: AlertDialog(content: Row(children: [const CircularProgressIndicator(), const SizedBox(width: 18), Expanded(child: Text(message))])),
+    ),
+  );
+  try {
+    return await work();
+  } finally {
+    nav.pop();
   }
 }

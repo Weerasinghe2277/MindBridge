@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'config.dart';
 
@@ -68,9 +69,23 @@ class Api {
       final req = http.MultipartRequest(method, _uri(path))
         ..headers.addAll({if (token != null) 'Authorization': 'Bearer $token', 'Accept': 'application/json'})
         ..fields.addAll(fields)
-        ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+        ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: _mediaType(filename)));
       return http.Response.fromStream(await _client.send(req));
     });
+  }
+
+  /// The server checks the file type, so send it (otherwise it arrives as application/octet-stream).
+  static MediaType _mediaType(String filename) {
+    final ext = filename.split('.').last.toLowerCase();
+    return switch (ext) {
+      'jpg' || 'jpeg' => MediaType('image', 'jpeg'),
+      'png' => MediaType('image', 'png'),
+      'webp' => MediaType('image', 'webp'),
+      'pdf' => MediaType('application', 'pdf'),
+      'mp3' => MediaType('audio', 'mpeg'),
+      'm4a' => MediaType('audio', 'mp4'),
+      _ => MediaType('application', 'octet-stream'),
+    };
   }
 
   Future<Map<String, dynamic>> _send(Future<http.Response> Function() run) async {

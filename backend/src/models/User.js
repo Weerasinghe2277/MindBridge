@@ -67,6 +67,9 @@ const UserSchema = new Schema({
   savedArticles: [{ type: Schema.Types.ObjectId, ref: 'Article' }],
   favoriteCounsellors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 
+  // Profile photo (counsellors and doctors), public image in Cloudinary.
+  photo: { id: String, url: String },
+
   // Staff professional profile (counsellor / doctor)
   professional: {
     title: String, // "Clinical Psychologist", "Medical Officer"
@@ -112,6 +115,10 @@ UserSchema.virtual('initials').get(function initials() {
   return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 });
 
+UserSchema.virtual('photoUrl').get(function photoUrl() {
+  return this.photo?.url || null;
+});
+
 UserSchema.virtual('isStaff').get(function isStaff() {
   return this.role === 'counsellor' || this.role === 'doctor';
 });
@@ -127,6 +134,7 @@ UserSchema.methods.toPublic = function toPublic() {
     status: this.status,
     emailVerified: this.emailVerified,
     initials: this.initials,
+    photoUrl: this.photoUrl,
     phone: this.phone || '',
     language: this.language,
     gender: this.gender || '',

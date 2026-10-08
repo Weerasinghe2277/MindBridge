@@ -19,8 +19,8 @@ router.use(requireAuth, requireRole('counsellor', 'doctor'), requireVerified);
 
 const POP = [
   { path: 'student', select: 'name studentId faculty year phone' },
-  { path: 'counsellor', select: 'name professional' },
-  { path: 'doctor', select: 'name professional availability' },
+  { path: 'counsellor', select: 'name professional photo' },
+  { path: 'doctor', select: 'name professional availability photo' },
   { path: 'consultation', select: 'start status mode room' },
 ];
 
@@ -40,7 +40,7 @@ function out(r, viewer) {
     consent: r.consent,
     student: r.student ? { id: r.student.id, name: r.student.name, initials: r.student.initials, studentId: r.student.studentId, faculty: r.student.faculty, year: r.student.year } : null,
     counsellor: r.counsellor ? { id: r.counsellor.id, name: r.counsellor.name, title: r.counsellor.professional?.title } : null,
-    doctor: r.doctor ? { id: r.doctor.id, name: r.doctor.name, title: r.doctor.professional?.title, initials: r.doctor.initials } : null,
+    doctor: r.doctor ? { id: r.doctor.id, name: r.doctor.name, title: r.doctor.professional?.title, initials: r.doctor.initials, photoUrl: r.doctor.photoUrl } : null,
     decline: r.decline?.reason ? r.decline : null,
     infoRequests: (r.infoRequests || []).map((x, i) => ({ index: i, items: x.items, message: x.message, reply: x.reply || '', at: x.at, repliedAt: x.repliedAt })),
     consultation: r.consultation?.start ? { id: r.consultation.id, start: r.consultation.start, status: r.consultation.status, mode: r.consultation.mode, room: r.consultation.room } : null,

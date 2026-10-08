@@ -17,7 +17,7 @@ const list = (v) => (v ? String(v).split(',').map((s) => s.trim()).filter(Boolea
 function card(u, next, extra = {}) {
   const p = u.professional || {};
   return {
-    id: u.id, name: u.name, initials: u.initials, title: p.title, focusAreas: p.focusAreas || [],
+    id: u.id, name: u.name, initials: u.initials, photoUrl: u.photoUrl, title: p.title, focusAreas: p.focusAreas || [],
     languages: p.languages || [], modes: p.modes || [], gender: u.gender || '', experienceYears: p.experienceYears,
     next: next ? { date: next.date, start: next.start, time: next.time } : null,
     freeToday: next?.freeToday || 0,

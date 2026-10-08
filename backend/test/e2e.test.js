@@ -402,6 +402,13 @@ test('music library and article covers (Cloudinary not configured in tests)', as
   assert.equal(noStorage.status, 400);
   assert.equal(noStorage.body.error.code, 'STORAGE_NOT_CONFIGURED');
 
+  // Profile photos: counsellors and doctors only, images only.
+  assert.equal((await upload('/me/photo', tokens.student, 'me.png', 'image/png', {}, 'PUT')).status, 403);
+  assert.equal((await upload('/me/photo', tokens.counsellor, 'me.pdf', 'application/pdf', {}, 'PUT')).body.error.code, 'BAD_FILE');
+  assert.equal((await upload('/me/photo', tokens.doctor, 'me.png', 'image/png', {}, 'PUT')).body.error.code, 'STORAGE_NOT_CONFIGURED');
+  assert.equal(ok(await call('DELETE', '/me/photo', tokens.counsellor)).user.photoUrl, null);
+  assert.ok('photoUrl' in ok(await call('GET', '/counsellors', tokens.student)).counsellors[0]);
+
   const id = lib.tracks[0].id;
   const edited = ok(await call('PATCH', `/music/${id}`, tokens.admin, { title: 'Rain Again', category: 'Sleep' }));
   assert.equal(edited.track.icon, 'bedtime');

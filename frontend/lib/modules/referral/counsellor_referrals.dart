@@ -48,7 +48,7 @@ class _ReferDoctorScreenState extends State<ReferDoctorScreen> {
             subtitle: widget.appointment.studentName,
             children: [
               if (docs.length == 1)
-                ListCards([ListItemData(avatar: docs[0]['initials'] as String, title: docs[0]['name'] as String, sub: '${docs[0]['title']} · ${docs[0]['office']}', badge: 'Available')])
+                ListCards([ListItemData(avatar: docs[0]['initials'] as String, avatarUrl: docs[0]['photoUrl'] as String?, title: docs[0]['name'] as String, sub: '${docs[0]['title']} · ${docs[0]['office']}', badge: 'Available')])
               else
                 OptionsList(items: [for (final x in docs) OptionItem(x['name'] as String, sub: '${x['title']} · ${x['openReferrals']} open referrals', icon: 'stethoscope')], selected: _doctor, onSelect: (i) => setState(() => _doctor = i)),
               const SectionHeader('Urgency'),

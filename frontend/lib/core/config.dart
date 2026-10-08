@@ -10,7 +10,7 @@ class AppConfig {
   static const _fromEnv = String.fromEnvironment('API_URL');
 
   /// The deployed API on Render, used by release builds (APK / web).
-  static const productionApiUrl = 'https://mindbridge-api-8w5g.onrender.com/api';
+  static const productionApiUrl = 'https://mindbridge-api-s4xi.onrender.com/api';
 
   static String get apiBaseUrl {
     if (_fromEnv.isNotEmpty) return _fromEnv;

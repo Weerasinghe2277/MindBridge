@@ -18,20 +18,35 @@ class MbIcon extends StatelessWidget {
 }
 
 class Avatar extends StatelessWidget {
-  const Avatar(this.initials, {super.key, this.size = 44, this.fontSize});
+  const Avatar(this.initials, {super.key, this.size = 44, this.fontSize, this.photoUrl});
   final String initials;
   final double size;
   final double? fontSize;
 
+  /// Profile photo; the initials show while it loads or if it can't be loaded.
+  final String? photoUrl;
+
   @override
   Widget build(BuildContext context) {
     final c = avatarColors(initials);
-    return Container(
+    final letters = Container(
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(color: c[0], shape: BoxShape.circle),
       child: Text(initials, style: Ty.nunito(size: fontSize ?? size * 0.34, weight: FontWeight.w700, color: c[1])),
+    );
+    if (photoUrl == null || photoUrl!.isEmpty) return letters;
+    return ClipOval(
+      child: Image.network(
+        photoUrl!,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        semanticLabel: 'Profile photo',
+        loadingBuilder: (_, child, progress) => progress == null ? child : letters,
+        errorBuilder: (_, _, _) => letters,
+      ),
     );
   }
 }
@@ -388,11 +403,12 @@ class DividerText extends StatelessWidget {
 // ─────────────────────────── Cards & lists ───────────────────────────
 
 class ListItemData {
-  const ListItemData({required this.title, this.sub, this.meta, this.avatar, this.icon, this.tone = Tone.green, this.badge, this.badgeTone = Tone.green, this.onTap, this.trailing});
+  const ListItemData({required this.title, this.sub, this.meta, this.avatar, this.avatarUrl, this.icon, this.tone = Tone.green, this.badge, this.badgeTone = Tone.green, this.onTap, this.trailing});
   final String title;
   final String? sub;
   final String? meta;
   final String? avatar;
+  final String? avatarUrl; // profile photo shown instead of the initials
   final String? icon;
   final Tone tone;
   final String? badge;
@@ -410,7 +426,7 @@ class ListTileCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         onTap: d.onTap,
         child: Row(children: [
-          if (d.avatar != null) ...[Avatar(d.avatar!), const SizedBox(width: 12)],
+          if (d.avatar != null) ...[Avatar(d.avatar!, photoUrl: d.avatarUrl), const SizedBox(width: 12)],
           if (d.icon != null) ...[IconChip(d.icon!, tone: d.tone), const SizedBox(width: 12)],
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -743,8 +759,12 @@ class ChecksCard extends StatelessWidget {
 }
 
 class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({super.key, required this.initials, required this.name, this.sub, this.badge, this.badgeTone = Tone.green, this.onAvatarTap});
+  const ProfileHeader({super.key, required this.initials, required this.name, this.sub, this.badge, this.badgeTone = Tone.green, this.onAvatarTap, this.photoUrl, this.editable = false});
   final String initials;
+  final String? photoUrl;
+
+  /// Shows a camera badge so people know they can tap to change the photo.
+  final bool editable;
   final String name;
   final String? sub;
   final String? badge;
@@ -757,19 +777,39 @@ class ProfileHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 2),
       child: Column(children: [
-        GestureDetector(
-          onTap: onAvatarTap,
-          child: Container(
-            width: 88,
-            height: 88,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: c[0],
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 4),
-              boxShadow: const [BoxShadow(color: Color(0x1A14281E), blurRadius: 10, offset: Offset(0, 2))],
-            ),
-            child: Text(initials, style: Ty.nunito(size: 30, weight: FontWeight.w800, color: c[1])),
+        Semantics(
+          button: onAvatarTap != null,
+          label: editable ? 'Change profile photo' : null,
+          child: GestureDetector(
+            onTap: onAvatarTap,
+            child: Stack(clipBehavior: Clip.none, children: [
+              Container(
+                width: 88,
+                height: 88,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: c[0],
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: const [BoxShadow(color: Color(0x1A14281E), blurRadius: 10, offset: Offset(0, 2))],
+                ),
+                child: photoUrl == null
+                    ? Text(initials, style: Ty.nunito(size: 30, weight: FontWeight.w800, color: c[1]))
+                    : Avatar(initials, size: 80, fontSize: 28, photoUrl: photoUrl),
+              ),
+              if (editable)
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(color: C.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3)),
+                    alignment: Alignment.center,
+                    child: const MbIcon('photo_camera', size: 16, color: Colors.white),
+                  ),
+                ),
+            ]),
           ),
         ),
         const SizedBox(height: 12),
