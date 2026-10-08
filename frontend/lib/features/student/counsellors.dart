@@ -160,6 +160,7 @@ class _CounsellorListScreenState extends State<CounsellorListScreen> {
             for (final c in list)
               ListItemData(
                 avatar: c['initials'] as String,
+                avatarUrl: c['photoUrl'] as String?,
                 title: c['name'] as String,
                 sub: [c['title'], ((c['focusAreas'] as List?) ?? []).take(2).join(', ')].where((e) => e != null && e.toString().isNotEmpty).join(' · '),
                 meta: nextLabel(c['next'] as Map<String, dynamic>?),
@@ -264,6 +265,7 @@ class _CounsellorProfileScreenState extends State<CounsellorProfileScreen> {
             children: [
               ProfileHeader(
                 initials: c['initials'] as String,
+                photoUrl: c['photoUrl'] as String?,
                 name: c['name'] as String,
                 sub: [c['title'], if (c['experienceYears'] != null) '${c['experienceYears']} years’ experience'].whereType<String>().join(' · '),
                 badge: 'Verified by Student Affairs',

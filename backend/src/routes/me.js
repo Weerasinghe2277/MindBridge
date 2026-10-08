@@ -2,7 +2,9 @@ const express = require('express');
 const User = require('../models/User');
 const Appointment = require('../models/Appointment');
 const M = require('../models');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
+const { uploadOne, IMAGE_TYPES } = require('../middleware/upload');
+const { saveMedia, deleteMedia } = require('../services/storage');
 const { body, password, z } = require('../middleware/validate');
 const { audit, notify } = require('../services/notify');
 const { badRequest, unauthorized } = require('../utils/errors');
@@ -74,6 +76,25 @@ router.patch('/privacy', body(z.object({
 router.patch('/notification-prefs', body(z.record(z.string().max(40), z.boolean())), async (req, res) => {
   const u = await User.findById(req.user._id);
   for (const [k, v] of Object.entries(req.body)) u.notificationPrefs.set(k, v);
+  await u.save();
+  res.json({ user: u.toPublic() });
+});
+
+// ---------- Profile photo (counsellors and doctors) ----------
+// Students see it when choosing a counsellor; the app crops it to a square before upload.
+router.put('/photo', requireRole('counsellor', 'doctor'), uploadOne({ types: IMAGE_TYPES, maxMb: 5, what: 'a JPG, PNG or WebP image' }), async (req, res) => {
+  const media = await saveMedia(req.file.buffer, { kind: 'image', folder: 'profiles' });
+  const u = await User.findById(req.user._id);
+  if (u.photo?.id) await deleteMedia(u.photo.id);
+  u.photo = { id: media.id, url: media.url };
+  await u.save();
+  res.json({ user: u.toPublic() });
+});
+
+router.delete('/photo', requireRole('counsellor', 'doctor'), async (req, res) => {
+  const u = await User.findById(req.user._id);
+  if (u.photo?.id) await deleteMedia(u.photo.id);
+  u.photo = undefined;
   await u.save();
   res.json({ user: u.toPublic() });
 });
