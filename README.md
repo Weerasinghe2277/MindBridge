@@ -107,7 +107,7 @@ cd frontend && flutter test
 | NFR1 | Privacy | Role-based access on every route. Counsellors see bookings only; mood is shared only if the student opts in. Doctors see only what was shared. Admins never see content. |
 | NFR2 | Confidentiality | AES-256-GCM encryption at rest for session notes, clinical notes, journal, mood notes, booking notes and Bridge chats. Referral views are audited. |
 | NFR3 | Usability | Onboarding, step indicators, plain-language states and errors; design from the tested hi-fi prototype |
-| NFR4 | Security | bcrypt, JWT plus server-side sessions (revocable), inactivity sign-out (admin-configurable, mirrored on device), rate limiting, Helmet, input validation, NoSQL-injection stripping, no tokens in URLs, no personal data stored on the device (the token is kept in memory only; the device only remembers that onboarding was seen) |
+| NFR4 | Security | bcrypt, JWT plus server-side sessions (revocable), inactivity sign-out (admin-configurable, mirrored on device; with quick unlock on, the app locks instead and opens again with fingerprint, face, pattern or PIN), rate limiting, Helmet, input validation, NoSQL-injection stripping, no tokens in URLs, no personal data stored on the device (the token is kept in memory only; the device only remembers that onboarding was seen) |
 | NFR5 | Consistent status | Single source of truth for status and timeline; retries on network errors; offline states |
 | NFR6 | Fast check-in and booking | Check-in in about 3 taps; booking in 4 steps or 2 via a profile quick slot |
 

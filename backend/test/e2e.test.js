@@ -77,6 +77,35 @@ test('password reset flow', async () => {
   assert.ok(r.token);
 });
 
+test('quick unlock: device key signs in, rotates, and is revoked by password reset', async () => {
+  const email = 'it11111111@my.sliit.lk';
+  const t = ok(await call('POST', '/auth/login', null, { email, password: 'newpass99', device: 'Pixel test' })).token;
+  const on = ok(await call('POST', '/auth/quick-unlock', t, { device: 'Pixel test' }), 201);
+  assert.ok(on.unlockKey.length >= 40);
+  assert.equal(on.user.privacy.biometricUnlock, true);
+
+  const s1 = ok(await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: on.unlockKey, device: 'Pixel test' }));
+  assert.ok(s1.token);
+  assert.equal(s1.user.email, email);
+  assert.notEqual(s1.unlockKey, on.unlockKey);
+  ok(await call('GET', '/auth/me', s1.token));
+  // The old key was replaced, so a copy of it no longer works.
+  const reused = await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: on.unlockKey });
+  assert.equal(reused.status, 401);
+  assert.equal(reused.body.error.code, 'QUICK_UNLOCK_INVALID');
+
+  // Turning it off on the phone removes the key.
+  ok(await call('POST', '/auth/quick-unlock/remove', null, { unlockKey: s1.unlockKey }));
+  assert.equal((await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: s1.unlockKey })).status, 401);
+  assert.equal(ok(await call('GET', '/auth/me', s1.token)).user.privacy.biometricUnlock, false);
+
+  // A password reset turns quick unlock off everywhere.
+  const again = ok(await call('POST', '/auth/quick-unlock', s1.token, {}), 201);
+  const f = ok(await call('POST', '/auth/forgot', null, { email }));
+  ok(await call('POST', '/auth/reset', null, { email, code: f.devOtp, password: 'newpass99' }));
+  assert.equal((await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: again.unlockKey })).status, 401);
+});
+
 test('student booking: duplicate block, slot race and new booking (FR2, FR3, FR7)', async () => {
   const fresh = (await call('POST', '/auth/login', null, { email: 'it11111111@my.sliit.lk', password: 'newpass99' })).body.token;
   const list = ok(await call('GET', '/counsellors', fresh)).counsellors;

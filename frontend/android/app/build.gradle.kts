@@ -59,3 +59,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // AppCompat launch theme, required by the fingerprint / face prompt on Android 8 and below.
+    implementation("androidx.appcompat:appcompat:1.7.1")
+}

@@ -106,6 +106,17 @@ const AuthSession = mongoose.model('AuthSession', new Schema({
   expiresAt: { type: Date, index: { expires: 0 } },
 }, opts));
 
+// Quick unlock (fingerprint, face or screen lock): one long random key per phone. The phone keeps
+// the key in its secure storage and only releases it after the user passes the device lock; the
+// server stores just a hash and swaps in a new key on every use.
+const QuickUnlockKey = mongoose.model('QuickUnlockKey', new Schema({
+  user: ref('User', { required: true, index: true }),
+  keyHash: { type: String, required: true, unique: true },
+  device: String,
+  lastUsedAt: Date,
+  expiresAt: { type: Date, required: true, index: { expires: 0 } },
+}, opts));
+
 const Setting = mongoose.model('Setting', new Schema({
   key: { type: String, unique: true, required: true },
   value: Schema.Types.Mixed,
@@ -118,5 +129,5 @@ const Referral = require('../modules/referral/referral.model');
 
 module.exports = {
   MoodEntry, JournalEntry, Notification, Article, WellnessEvent, ChatMessage,
-  SessionNote, Referral, Consultation, AuditLog, Otp, AuthSession, Setting, Track,
+  SessionNote, Referral, Consultation, AuditLog, Otp, AuthSession, QuickUnlockKey, Setting, Track,
 };

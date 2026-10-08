@@ -133,6 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _select('autoSignOutMinutes', 'Auto sign-out after', [5, 10, 15, 30], (m) => '$m minutes'),
           MbField(label: 'Password policy', type: FieldType.select, value: s['passwordPolicy'] as String, enabled: false, helper: 'Enforced for every account'),
           const SectionHeader('Your active sessions'),
+          const QuickUnlockTile(),
           const ActiveSessionsCard(),
         ],
     };

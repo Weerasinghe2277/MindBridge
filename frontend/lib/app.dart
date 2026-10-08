@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/api.dart';
 import 'core/theme.dart';
 import 'features/admin/admin_shell.dart';
 import 'features/auth/login.dart';
@@ -14,6 +15,7 @@ import 'modules/counsellor_approval/staff_status.dart';
 import 'state/auth.dart';
 import 'state/notifications.dart';
 import 'state/player.dart';
+import 'widgets/page.dart';
 import 'widgets/ui.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -58,6 +60,11 @@ class _RootGateState extends State<RootGate> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
     final userId = auth.user?['id'] as String?;
+    if (auth.offerQuickUnlock && auth.status == AuthStatus.signedIn) {
+      auth.offerQuickUnlock = false;
+      // After the navigation reset below, so the sheet isn't popped straight away.
+      WidgetsBinding.instance.addPostFrameCallback((_) => WidgetsBinding.instance.addPostFrameCallback((_) => _offerQuickUnlock()));
+    }
     if (_last != auth.status || _lastUserId != userId) {
       final wasSignedIn = _last == AuthStatus.signedIn;
       _last = auth.status;
@@ -74,6 +81,30 @@ class _RootGateState extends State<RootGate> {
       });
     }
 
+    return _screenFor(auth);
+  }
+
+  /// Asked once per phone, after the first password sign-in.
+  Future<void> _offerQuickUnlock() async {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    final auth = ctx.read<AuthState>();
+    await showMbSheet(
+      ctx,
+      icon: 'fingerprint',
+      title: 'Sign in faster next time?',
+      text: 'Turn on quick unlock to open MindBridge with your fingerprint, face, pattern or PIN instead of typing your password. You can change this any time in Privacy & security.',
+      actions: [
+        SheetAction('Turn on quick unlock', run: (_) async {
+          if (await auth.enableQuickUnlock() && ctx.mounted) toast(ctx, 'Quick unlock is on for this phone.');
+          return true;
+        }),
+        const SheetAction('Not now', kind: BtnKind.ghost),
+      ],
+    );
+  }
+
+  Widget _screenFor(AuthState auth) {
     switch (auth.status) {
       case AuthStatus.unknown:
         return const _Splash();
@@ -147,6 +178,11 @@ class _InactivityGuardState extends State<_InactivityGuard> with WidgetsBindingO
   void _check() {
     final auth = context.read<AuthState>();
     if (auth.status != AuthStatus.signedIn) return;
+    // While locked the clock waits, so it starts fresh after unlocking.
+    if (auth.locked) {
+      _last = DateTime.now();
+      return;
+    }
     // Music playing counts as activity — the student is using the app.
     if (context.read<PlayerState>().playing) {
       _last = DateTime.now();
@@ -157,9 +193,81 @@ class _InactivityGuardState extends State<_InactivityGuard> with WidgetsBindingO
   }
 
   @override
-  Widget build(BuildContext context) => Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => _last = DateTime.now(),
-        child: widget.child,
-      );
+  Widget build(BuildContext context) {
+    final locked = context.select<AuthState, bool>((a) => a.locked && a.status == AuthStatus.signedIn);
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _last = DateTime.now(),
+      child: Stack(children: [
+        // The app stays underneath so the user keeps their place, hidden from touch and screen readers.
+        Positioned.fill(child: ExcludeSemantics(excluding: locked, child: IgnorePointer(ignoring: locked, child: widget.child))),
+        if (locked) const Positioned.fill(child: _LockScreen()),
+      ]),
+    );
+  }
+}
+
+/// Covers the app after inactivity for quick-unlock users (NFR4): nothing is readable until they
+/// confirm with fingerprint, face, pattern or PIN.
+class _LockScreen extends StatefulWidget {
+  const _LockScreen();
+
+  @override
+  State<_LockScreen> createState() => _LockScreenState();
+}
+
+class _LockScreenState extends State<_LockScreen> {
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _unlock());
+  }
+
+  Future<void> _unlock() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await context.read<AuthState>().unlock();
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthState>();
+    return Material(
+      color: C.bg,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+          child: Column(children: [
+            const Spacer(),
+            const MindBridgeMark(size: 76),
+            const SizedBox(height: 22),
+            Text('MindBridge is locked', style: Ty.xl, textAlign: TextAlign.center),
+            const SizedBox(height: 10),
+            Text(
+              'For your privacy, MindBridge locks after ${auth.autoSignOutMinutes} minutes of inactivity. Unlock with your fingerprint, face, pattern or PIN to carry on where you left off.',
+              style: Ty.nunito(size: 14.5, color: C.body, height: 1.45),
+              textAlign: TextAlign.center,
+            ),
+            if (_error != null) ...[const SizedBox(height: 16), BannerCard(tone: Tone.red, icon: 'error', text: _error)],
+            const Spacer(),
+            MbButton(auth.firstName.isEmpty ? 'Unlock' : 'Unlock as ${auth.firstName}', icon: 'fingerprint', loading: _busy, onPressed: _unlock),
+            const SizedBox(height: 8),
+            MbButton('Sign out', kind: BtnKind.ghost, onPressed: _busy ? null : () => auth.logout()),
+          ]),
+        ),
+      ),
+    );
+  }
 }
