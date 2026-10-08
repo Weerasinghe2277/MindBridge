@@ -129,6 +129,46 @@ test('student booking: duplicate block, slot race and new booking (FR2, FR3, FR7
   assert.equal(again.status, 'cancelled');
 });
 
+test('anonymous online booking hides the student from the counsellor', async () => {
+  const fresh = (await call('POST', '/auth/login', null, { email: 'it11111111@my.sliit.lk', password: 'newpass99' })).body.token;
+  const c = ok(await call('GET', '/counsellors', fresh)).counsellors.find((x) => x.name.includes('Hasini'));
+  assert.ok(c && c.next && c.modes.includes('online'), 'Hasini has an open online slot');
+  const inPerson = await call('POST', '/appointments', fresh, { counsellorId: c.id, start: c.next.start, mode: 'in_person', anonymous: true });
+  assert.equal(inPerson.status, 400);
+
+  const mine = ok(await call('POST', '/appointments', fresh, { counsellorId: c.id, start: c.next.start, mode: 'online', note: 'Feeling low', anonymous: true }), 201).appointment;
+  assert.equal(mine.anonymous, true);
+  assert.equal(mine.student.name, 'New Student'); // the student still sees their own booking normally
+
+  // Nothing that identifies the student reaches the counsellor.
+  const leaks = (o) => /New Student|IT11111111|it11111111/i.test(JSON.stringify(o));
+  const seen = ok(await call('GET', `/appointments/${mine.id}`, tokens.counsellor)).appointment;
+  assert.equal(seen.student.name, 'Anonymous student');
+  assert.equal(seen.student.id, null);
+  assert.equal(seen.note, 'Feeling low');
+  assert.ok(!leaks(seen));
+  const dash = ok(await call('GET', '/staff/dashboard', tokens.counsellor));
+  assert.ok(dash.pending.some((a) => a.id === mine.id && a.student.anonymous));
+  assert.ok(!leaks(dash));
+  const profile = ok(await call('GET', `/appointments/${mine.id}/student`, tokens.counsellor));
+  assert.equal(profile.anonymous, true);
+  assert.equal(profile.moodTrend, null);
+  assert.ok(!leaks(profile));
+  assert.deepEqual(ok(await call('GET', `/appointments/${mine.id}/duplicates`, tokens.counsellor)).others, []);
+  // (Earlier notifications about this student's normal bookings are fine; these are about the anonymous one.)
+  const notes = ok(await call('GET', '/notifications', tokens.counsellor)).notifications.filter((n) => n.link?.id === mine.id);
+  assert.ok(notes.some((n) => /An anonymous student/.test(n.body)));
+  assert.ok(!leaks(notes));
+
+  // It can't be referred to a doctor, because a referral needs the student's identity.
+  ok(await call('POST', `/appointments/${mine.id}/accept`, tokens.counsellor));
+  const doc = ok(await call('GET', '/staff/doctors', tokens.counsellor)).doctors[0];
+  const ref = await call('POST', '/referrals', tokens.counsellor, { appointmentId: mine.id, doctorId: doc.id, urgency: 'routine', reason: 'Recurring headaches for a month', share: { summary: true, contact: true }, consent: true });
+  assert.equal(ref.status, 400);
+  assert.equal(ref.body.error.code, 'ANONYMOUS_BOOKING');
+  ok(await call('POST', `/appointments/${mine.id}/cancel`, tokens.counsellor, { reason: 'Test finished' }));
+});
+
 test('counsellor: accept, propose, student accepts proposal, session and notes (FR6, NFR5)', async () => {
   const dash = ok(await call('GET', '/staff/dashboard', tokens.counsellor));
   const req = dash.pending.find((a) => a.student.name === 'Pasindi Perera');

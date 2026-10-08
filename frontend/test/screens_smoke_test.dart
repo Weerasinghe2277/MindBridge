@@ -105,6 +105,10 @@ void main() {
         child: MaterialApp(theme: buildTheme(), home: screen),
       ));
       await Future<void>.delayed(Duration(milliseconds: waitMs));
+      // Build once more in real time, so widgets that appear after the first load (and start
+      // their own requests) finish them here rather than leaving timers pending.
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
     });
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 600));

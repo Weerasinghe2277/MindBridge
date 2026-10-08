@@ -24,6 +24,13 @@ const personLite = (u) => (u && u._id ? {
   year: u.year,
 } : null);
 
+// What a counsellor sees instead of the student on an anonymous booking. No id, so nothing can
+// be looked up or linked to the student's other bookings.
+const anonymousStudent = () => ({ id: null, name: 'Anonymous student', initials: 'AS', anonymous: true });
+
+// Name to use in notifications and reminders sent to the counsellor.
+const studentName = (a, fallback) => (a.anonymous ? 'An anonymous student' : (a.student?.name || fallback || 'A student'));
+
 // The same four-step timeline is shown to the student and the counsellor (FR4, NFR5).
 function timeline(a, viewer) {
   const find = (s) => (a.history || []).find((h) => h.status === s);
@@ -72,6 +79,7 @@ function serialize(a, viewer) {
     start: a.start,
     end: a.end,
     mode: a.mode,
+    anonymous: !!a.anonymous,
     location: a.location,
     meetingLink: a.status === 'confirmed' || a.status === 'reschedule_requested' || a.status === 'reschedule_proposed' ? a.meetingLink : undefined,
     status: a.status,
@@ -90,7 +98,7 @@ function serialize(a, viewer) {
   };
   // The booking note is shared only between the student who wrote it and their counsellor.
   if (viewer === 'student' || viewer === 'counsellor') o.note = a.note || '';
-  if (a.student) o.student = personLite(a.student);
+  if (a.student) o.student = a.anonymous && viewer !== 'student' ? anonymousStudent() : personLite(a.student);
   if (a.counsellor) o.counsellor = personLite(a.counsellor);
   return o;
 }
@@ -114,4 +122,4 @@ async function loadFor(req, id) {
 // Serializes for whoever is asking (student or counsellor view).
 const outFor = (req, a) => serialize(a, req.user.role);
 
-module.exports = { serialize, timeline, STATUS_META, personLite, POP, loadFor, outFor };
+module.exports = { serialize, timeline, STATUS_META, personLite, anonymousStudent, studentName, POP, loadFor, outFor };

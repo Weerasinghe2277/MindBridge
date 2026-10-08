@@ -14,6 +14,8 @@ const SessionNote = mongoose.model('SessionNote', new Schema({
   tags: [String],
   goals: [{ text: String, done: Boolean }],
   recommendReferral: { type: Boolean, default: false },
+  // Notes from anonymous bookings are never shown as "previous notes" on the student's other sessions.
+  anonymous: { type: Boolean, default: false },
 }, opts));
 
 module.exports = SessionNote;

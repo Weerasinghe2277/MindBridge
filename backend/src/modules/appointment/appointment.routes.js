@@ -8,7 +8,7 @@ const Appointment = require('../../models/Appointment');
 const User = require('../../models/User');
 const { requireAuth, requireRole, requireVerified } = require('../../middleware/auth');
 const { body, objectId, z } = require('../../middleware/validate');
-const { serialize, POP, loadFor, outFor: out } = require('../../services/appointments');
+const { serialize, studentName, POP, loadFor, outFor: out } = require('../../services/appointments');
 const { assertSlotFree, slotsForDate } = require('../../services/slots');
 const { getSettings } = require('../../services/settings');
 const { notify } = require('../../services/notify');
@@ -85,10 +85,12 @@ const createSchema = z.object({
   start: z.string().datetime({ offset: true }),
   mode: z.enum(['online', 'in_person']),
   note: z.string().trim().max(1000).optional().default(''),
+  anonymous: z.boolean().optional().default(false),
 });
 
 router.post('/', requireRole('student'), body(createSchema), async (req, res) => {
-  const { counsellorId, start, mode, note } = req.body;
+  const { counsellorId, start, mode, note, anonymous } = req.body;
+  if (anonymous && mode !== 'online') throw badRequest('Anonymous booking is only available for online sessions.', 'VALIDATION_ERROR', { field: 'anonymous' });
   const settings = await getSettings();
   if (mode === 'online' && !settings.appointments.allowOnline) throw badRequest('Online sessions are not available right now.');
   if (mode === 'in_person' && !settings.appointments.allowInPerson) throw badRequest('In-person sessions are not available right now.');
@@ -105,6 +107,7 @@ router.post('/', requireRole('student'), body(createSchema), async (req, res) =>
 
   const check = await assertSlotFree(counsellor, start);
   if (!check.ok) throw conflict(SLOT_MESSAGES[check.reason] || SLOT_MESSAGES.booked, 'SLOT_TAKEN');
+  const linkable = anonymous ? [] : existing.filter((e) => !e.anonymous);
 
   const a = new Appointment({
     student: req.user._id,
@@ -112,10 +115,12 @@ router.post('/', requireRole('student'), body(createSchema), async (req, res) =>
     start: new Date(check.slot.start),
     end: new Date(check.slot.end),
     mode,
+    anonymous,
     location: mode === 'in_person' ? (counsellor.professional?.room || 'Wellbeing Centre, Room 2.14, Main Building') : 'Online',
     note,
-    duplicateOf: existing.map((e) => e._id),
-    flaggedDuplicate: existing.length > 0,
+    // Anonymous bookings are never linked to the student's other bookings (that would reveal who it is).
+    duplicateOf: linkable.map((e) => e._id),
+    flaggedDuplicate: linkable.length > 0,
     history: [{ status: 'pending', label: 'Request sent', by: 'student' }],
   });
   await saveHandlingSlotRace(a);
@@ -123,14 +128,14 @@ router.post('/', requireRole('student'), body(createSchema), async (req, res) =>
 
   await notify(counsellor, {
     type: 'booking_request', title: 'New booking request',
-    body: `${req.user.name} · ${T.fmtDateTime(a.start)}`, icon: 'inbox', tone: 'amber', link: { screen: 'request', id: a.id },
+    body: `${studentName(a)} · ${T.fmtDateTime(a.start)}${anonymous ? ' · online' : ''}`, icon: 'inbox', tone: 'amber', link: { screen: 'request', id: a.id },
   });
-  if (existing.length) {
-    for (const e of existing) {
+  if (linkable.length) {
+    for (const e of linkable) {
       await Appointment.updateOne({ _id: e._id }, { $addToSet: { duplicateOf: a._id }, $set: { flaggedDuplicate: true } });
-      await notify(e.counsellor, { type: 'duplicate', title: 'Possible duplicate booking', body: `${req.user.name} has ${existing.length + 1} active requests`, icon: 'content_copy', tone: 'red', link: { screen: 'request', id: e.id } });
+      await notify(e.counsellor, { type: 'duplicate', title: 'Possible duplicate booking', body: `${req.user.name} has ${linkable.length + 1} active requests`, icon: 'content_copy', tone: 'red', link: { screen: 'request', id: e.id } });
     }
-    await notify(counsellor, { type: 'duplicate', title: 'Possible duplicate booking', body: `${req.user.name} has ${existing.length + 1} active requests`, icon: 'content_copy', tone: 'red', link: { screen: 'request', id: a.id } });
+    await notify(counsellor, { type: 'duplicate', title: 'Possible duplicate booking', body: `${req.user.name} has ${linkable.length + 1} active requests`, icon: 'content_copy', tone: 'red', link: { screen: 'request', id: a.id } });
   }
   res.status(201).json({ appointment: out(req, a) });
 });
@@ -196,7 +201,8 @@ router.post('/:id/decline', requireRole('counsellor'), body(declineSchema), asyn
 
 router.get('/:id/duplicates', requireRole('counsellor'), async (req, res) => {
   const a = await loadFor(req, req.params.id);
-  const others = await Appointment.find({ ...activeQuery(a.student._id), _id: { $ne: a._id } }).populate(POP);
+  // Anonymous bookings are never matched with the student's other bookings, in either direction.
+  const others = a.anonymous ? [] : await Appointment.find({ ...activeQuery(a.student._id), _id: { $ne: a._id }, anonymous: { $ne: true } }).populate(POP);
   // Only booking facts are revealed — never notes or check-ins.
   res.json({
     appointment: out(req, a),
@@ -244,7 +250,7 @@ router.post('/:id/reschedule', body(rescheduleSchema), async (req, res) => {
     a.start = newStart; a.end = newEnd;
     a.history.push({ status: 'pending_moved', label: 'Time changed by student', by: 'student' });
     await saveHandlingSlotRace(a);
-    await notify(other, { type: 'reschedule', title: 'Request time changed', body: `${req.user.name} moved their request to ${T.fmtDateTime(newStart)}.`, icon: 'update', tone: 'blue', link: { screen: 'request', id: a.id } });
+    await notify(other, { type: 'reschedule', title: 'Request time changed', body: `${studentName(a)} moved their request to ${T.fmtDateTime(newStart)}.`, icon: 'update', tone: 'blue', link: { screen: 'request', id: a.id } });
   } else {
     a.proposal = { start: newStart, end: newEnd, reason: req.body.reason, by: isStudent ? 'student' : 'counsellor', at: new Date() };
     a.status = isStudent ? 'reschedule_requested' : 'reschedule_proposed';
@@ -253,7 +259,7 @@ router.post('/:id/reschedule', body(rescheduleSchema), async (req, res) => {
     await notify(other, {
       type: 'reschedule',
       title: isStudent ? 'Reschedule requested' : 'New time proposed',
-      body: `${req.user.name}: ${T.fmtDateTime(newStart)}${req.body.reason ? ` — “${req.body.reason}”` : ''}`,
+      body: `${isStudent ? studentName(a) : req.user.name}: ${T.fmtDateTime(newStart)}${req.body.reason ? ` — “${req.body.reason}”` : ''}`,
       icon: 'update', tone: 'blue', link: { screen: isStudent ? 'request' : 'appointment', id: a.id },
     });
   }
@@ -266,13 +272,13 @@ router.post('/:id/proposal', requireRole('student'), body(z.object({ accept: z.b
   if (a.status !== 'reschedule_proposed') throw conflict('There’s no pending proposal for this booking.', 'STATE_CHANGED');
   if (req.body.accept) {
     await applyProposal(a, 'student');
-    await notify(a.counsellor, { type: 'reschedule', title: 'Reschedule accepted', body: `${req.user.name} moved to ${T.fmtDateTime(a.start)}`, icon: 'update', tone: 'blue', link: { screen: 'appointment', id: a.id } });
+    await notify(a.counsellor, { type: 'reschedule', title: 'Reschedule accepted', body: `${studentName(a)} moved to ${T.fmtDateTime(a.start)}`, icon: 'update', tone: 'blue', link: { screen: 'appointment', id: a.id } });
   } else {
     a.status = 'confirmed';
     a.proposal = undefined;
     a.history.push({ status: 'confirmed', label: 'Proposal declined — original time kept', by: 'student' });
     await a.save();
-    await notify(a.counsellor, { type: 'reschedule', title: 'Proposal declined', body: `${req.user.name} kept the original time, ${T.fmtDateTime(a.start)}`, icon: 'update', tone: 'amber', link: { screen: 'appointment', id: a.id } });
+    await notify(a.counsellor, { type: 'reschedule', title: 'Proposal declined', body: `${studentName(a)} kept the original time, ${T.fmtDateTime(a.start)}`, icon: 'update', tone: 'amber', link: { screen: 'appointment', id: a.id } });
   }
   res.json({ appointment: out(req, a) });
 });

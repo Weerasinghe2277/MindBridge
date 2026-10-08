@@ -20,6 +20,10 @@ class BookingDraft {
   String mode = 'online';
   String note = '';
 
+  /// Online only. Null until the student answers "Book anonymously?".
+  bool? anonymous;
+  bool get isAnonymous => mode == 'online' && anonymous == true;
+
   String get counsellorId => counsellor['id'] as String;
   String get name => counsellor['name'] as String;
   String get lastName => name.split(' ').last;
@@ -304,11 +308,29 @@ class _BookMeetingScreenState extends State<BookMeetingScreen> {
       children: [
         const StepsBar(n: 3, of: 4, label: 'Meeting type'),
         OptionsList(items: [for (final o in opts) o.$2], selected: opts.indexWhere((o) => o.$1 == d.mode), onSelect: (i) => setState(() => d.mode = opts[i].$1)),
+        if (d.mode == 'online') ...[
+          const SectionHeader('Book anonymously?'),
+          OptionsList(
+            items: const [
+              OptionItem('Share my details', sub: 'The counsellor sees your name, student ID and faculty', icon: 'person'),
+              OptionItem('Book anonymously', sub: 'The counsellor only sees “Anonymous student” — not your name, ID, faculty or past sessions', icon: 'visibility_off'),
+            ],
+            selected: d.anonymous == null ? -1 : (d.anonymous! ? 1 : 0),
+            onSelect: (i) => setState(() => d.anonymous = i == 1),
+          ),
+          if (d.anonymous == true)
+            const BannerCard(
+              tone: Tone.lilac,
+              icon: 'visibility_off',
+              title: 'Your identity stays hidden',
+              text: 'When you join the video call, you can use a nickname and keep your camera off. Anonymous sessions can’t be referred to the Medical Centre, because a referral needs your details.',
+            ),
+        ],
         MbField(label: 'Anything you’d like the counsellor to know? (optional)', controller: _note, type: FieldType.area, rows: 3, hint: 'e.g. I’ve been struggling to sleep before exams', maxLength: 1000),
-        BannerCard(icon: 'lock', text: 'Only ${d.name} can read this note.'),
+        BannerCard(icon: 'lock', text: d.isAnonymous ? 'Only ${d.name} can read this note. Don’t include your name or ID if you want to stay anonymous.' : 'Only ${d.name} can read this note.'),
       ],
       foot: [
-        MbButton('Review booking', onPressed: () {
+        MbButton('Review booking', onPressed: d.mode == 'online' && d.anonymous == null ? null : () {
           d.note = _note.text.trim();
           push(context, BookReviewScreen(draft: d), root: true, name: 'book');
         }),
@@ -338,11 +360,11 @@ class _BookReviewScreenState extends State<BookReviewScreen> {
       icon: 'event_available',
       title: 'Send this request?',
       text: '${d.name} will review it. You can reschedule or cancel any time before the session.',
-      rows: [('When', Fmt.dateTime(start, relative: false)), ('Meeting', modeLabel(d.mode))],
+      rows: [('When', Fmt.dateTime(start, relative: false)), ('Meeting', modeLabel(d.mode)), if (d.isAnonymous) ('Identity', 'Anonymous')],
       actions: [
         SheetAction('Send request', run: (_) async {
           try {
-            final r = await api.post('/appointments', {'counsellorId': d.counsellorId, 'start': start, 'mode': d.mode, 'note': d.note});
+            final r = await api.post('/appointments', {'counsellorId': d.counsellorId, 'start': start, 'mode': d.mode, 'note': d.note, 'anonymous': d.isAnonymous});
             created = Appointment(r['appointment'] as Map<String, dynamic>);
           } on ApiException catch (e) {
             if (e.code != 'SLOT_TAKEN' && e.code != 'DUPLICATE_BOOKING') rethrow;
@@ -395,6 +417,7 @@ class _BookReviewScreenState extends State<BookReviewScreen> {
                 ('Date', Fmt.dayYear(s['start'])),
                 ('Time', Fmt.timeRange(s['start'], s['end'])),
                 ('Meeting', modeLabel(d.mode)),
+                if (d.mode == 'online') ('Identity', d.isAnonymous ? 'Anonymous — your details are hidden' : 'Shared with the counsellor'),
                 ('Your note', d.note.isEmpty ? 'None' : 'Added'),
               ]),
               const BannerCard(icon: 'verified', title: 'No other active booking', text: 'We checked: you don’t have another pending or confirmed appointment.'),

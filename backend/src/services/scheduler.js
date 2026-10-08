@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { ChatMessage, MoodEntry, Notification } = require('../models');
 const { notify } = require('./notify');
 const { getSettings } = require('./settings');
+const { studentName } = require('./appointments');
 const T = require('../utils/time');
 
 const HOUR = 3600 * 1000;
@@ -20,7 +21,7 @@ async function sendReminders(settings) {
     const where = a.mode === 'online' ? 'Online · link opens 10 min before' : a.location;
     if (left <= HOUR && !a.remindersSent.hour && settings.notifications.reminderHour) {
       await notify(a.student, { type: 'reminder', title: 'Your session starts within the hour', body: `${a.counsellor.name} · ${T.fmtTime(a.start)} · ${where}`, icon: 'alarm', tone: 'blue', link: { screen: 'appointment', id: a.id } });
-      await notify(a.counsellor, { type: 'reminder', title: 'Session soon', body: `${a.student.name} · ${T.fmtTime(a.start)}`, icon: 'alarm', tone: 'blue', link: { screen: 'appointment', id: a.id } });
+      await notify(a.counsellor, { type: 'reminder', title: 'Session soon', body: `${studentName(a)} · ${T.fmtTime(a.start)}`, icon: 'alarm', tone: 'blue', link: { screen: 'appointment', id: a.id } });
       a.remindersSent.hour = true;
       a.remindersSent.day = true;
     } else if (left > HOUR && !a.remindersSent.day && settings.notifications.reminderDay) {

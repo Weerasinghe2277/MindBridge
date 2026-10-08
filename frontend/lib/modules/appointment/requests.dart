@@ -98,7 +98,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           final others = (d['others'] as List).cast<Map<String, dynamic>>();
           final info = d['info'] as Map<String, dynamic>;
           final s = info['student'] as Map<String, dynamic>;
-          final sessions = info['sessions'] as Map<String, dynamic>;
+          final sessions = info['sessions'] as Map<String, dynamic>?; // null for anonymous bookings
           final isMove = a.status == 'reschedule_requested';
           final open = a.status == 'pending' || isMove;
           return MbPage(
@@ -109,7 +109,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                 ListItemData(
                   avatar: s['initials'] as String,
                   title: s['name'] as String,
-                  sub: [s['studentId'], if (s['year'] != null) 'Year ${s['year']}', (s['faculty'] as String?)?.replaceFirst('Faculty of ', '')].whereType<String>().join(' · '),
+                  sub: studentDetailsLine(s),
                   onTap: () => push(context, StudentInfoScreen(appointmentId: a.id)),
                 ),
               ]),
@@ -127,8 +127,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                   ('Requested slot', Fmt.dateTime(a.start, relative: false)),
                   ('Meeting', a.modeLabel),
                   ('Submitted', Fmt.dateTime(a.createdAt)),
-                  ('Previous sessions', (sessions['completed'] as num) == 0 ? 'None' : '${sessions['completed']} with you'),
+                  if (sessions != null) ('Previous sessions', (sessions['completed'] as num) == 0 ? 'None' : '${sessions['completed']} with you'),
                 ]),
+              if (a.anonymous) const AnonymousBookingBanner(),
               if (!open)
                 BannerCard(tone: a.statusTone, icon: 'info', title: 'Already ${a.statusLabel.toLowerCase()}', text: 'This request has been handled.')
               else if (others.isNotEmpty)

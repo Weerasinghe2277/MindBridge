@@ -172,6 +172,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 ('Date', Fmt.dayYear(a.start)),
                 ('Time', a.timeRange),
                 ('Meeting', a.online ? (a.meetingLink != null ? 'Online · secure video link' : 'Online · link after confirmation') : 'In person · ${a.location}'),
+                if (a.anonymous) ('Identity', 'Anonymous — your counsellor can’t see your details'),
                 if (a.note.isNotEmpty) ('Your note', 'Shared with your counsellor only'),
               ]),
               if (suggested.isNotEmpty) ...[
