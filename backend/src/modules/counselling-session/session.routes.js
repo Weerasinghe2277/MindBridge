@@ -8,12 +8,14 @@ const SessionNote = require('./session-note.model');
 const { MoodEntry } = require('../../models');
 const { requireAuth, requireRole, requireVerified } = require('../../middleware/auth');
 const { body, z } = require('../../middleware/validate');
-const { loadFor, outFor: out } = require('../../services/appointments');
+const { loadFor, outFor: out, anonymousStudent } = require('../../services/appointments');
 const { notify } = require('../../services/notify');
 const T = require('../../utils/time');
 const { conflict } = require('../../utils/errors');
 
 const { ACTIVE } = Appointment;
+// A known student's history with this counsellor never includes their anonymous bookings.
+const named = { anonymous: { $ne: true } };
 const router = express.Router();
 router.use(requireAuth, requireRole('student', 'counsellor'), requireVerified);
 
@@ -46,7 +48,7 @@ router.post('/:id/complete', requireRole('counsellor'), body(z.object({ noShow: 
   a.markModified('session');
   a.history.push({ status: a.status, label: req.body.noShow ? 'Student did not attend' : 'Session completed', by: 'counsellor' });
   await a.save();
-  const count = await Appointment.countDocuments({ student: a.student._id, counsellor: a.counsellor._id, status: 'completed' });
+  const count = a.anonymous ? null : await Appointment.countDocuments({ student: a.student._id, counsellor: a.counsellor._id, status: 'completed', ...named });
   if (!req.body.noShow) {
     await notify(a.student, { type: 'booking', title: 'Session completed', body: `Thanks for meeting with ${req.user.name}. You can book a follow-up any time.`, icon: 'task_alt', tone: 'green', link: { screen: 'appointment', id: a.id } });
   }
@@ -57,7 +59,7 @@ router.post('/:id/complete', requireRole('counsellor'), body(z.object({ noShow: 
 router.get('/:id/notes', requireRole('counsellor'), async (req, res) => {
   const a = await loadFor(req, req.params.id);
   const note = await SessionNote.findOne({ appointment: a._id, counsellor: req.user._id });
-  const prev = await SessionNote.findOne({ student: a.student._id, counsellor: req.user._id, appointment: { $ne: a._id } }).sort({ createdAt: -1 });
+  const prev = a.anonymous ? null : await SessionNote.findOne({ student: a.student._id, counsellor: req.user._id, appointment: { $ne: a._id }, ...named }).sort({ createdAt: -1 });
   const ser = (n) => n && { summary: n.summary || '', plan: n.plan || '', tags: n.tags, goals: n.goals, recommendReferral: n.recommendReferral, updatedAt: n.updatedAt };
   res.json({ note: ser(note), previous: ser(prev) });
 });
@@ -72,7 +74,7 @@ router.put('/:id/notes', requireRole('counsellor'), body(z.object({
   const a = await loadFor(req, req.params.id);
   const note = await SessionNote.findOneAndUpdate(
     { appointment: a._id },
-    { $set: { counsellor: req.user._id, student: a.student._id, ...req.body } },
+    { $set: { counsellor: req.user._id, student: a.student._id, anonymous: !!a.anonymous, ...req.body } },
     { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true },
   );
   res.json({ saved: true, updatedAt: note.updatedAt });
@@ -81,12 +83,16 @@ router.put('/:id/notes', requireRole('counsellor'), body(z.object({
 // Limited student view for counsellors (NFR1): booking facts, plus mood trends only if shared.
 router.get('/:id/student', requireRole('counsellor'), async (req, res) => {
   const a = await loadFor(req, req.params.id);
+  if (a.anonymous) {
+    // Anonymous booking: nothing about the student, their history or their mood.
+    return res.json({ student: anonymousStudent(), anonymous: true, sessions: null, prefers: 'online', moodShared: false, moodTrend: null });
+  }
   const s = await User.findById(a.student._id);
   const [upcoming, completed] = await Promise.all([
-    Appointment.countDocuments({ student: s._id, counsellor: req.user._id, status: { $in: ACTIVE }, end: { $gt: new Date() } }),
-    Appointment.countDocuments({ student: s._id, counsellor: req.user._id, status: 'completed' }),
+    Appointment.countDocuments({ student: s._id, counsellor: req.user._id, status: { $in: ACTIVE }, end: { $gt: new Date() }, ...named }),
+    Appointment.countDocuments({ student: s._id, counsellor: req.user._id, status: 'completed', ...named }),
   ]);
-  const lastMode = await Appointment.findOne({ student: s._id, counsellor: req.user._id }).sort({ createdAt: -1 }).select('mode');
+  const lastMode = await Appointment.findOne({ student: s._id, counsellor: req.user._id, ...named }).sort({ createdAt: -1 }).select('mode');
   let moodTrend = null;
   if (s.privacy?.shareMoodTrends) {
     const since = T.addDays(T.todayStr(), -27);

@@ -3,6 +3,7 @@
 process.env.USE_MEMORY_DB = 'true';
 process.env.NODE_ENV = 'test';
 process.env.CLOUDINARY_URL = ''; // always test against GridFS, never a real Cloudinary account
+process.env.GEMINI_API_KEY = ''; // Bridge uses its built-in replies in tests, never the real Gemini API
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -45,7 +46,7 @@ before(async () => {
   tokens.student = await login('it23714052@my.sliit.lk');
   tokens.counsellor = await login('hasini.k@sliit.lk');
   tokens.doctor = await login('ruwan.d@sliit.lk');
-  tokens.admin = await login('malsha.g@sliit.lk');
+  tokens.admin = await login('mindbrige.support@gmail.com');
 });
 
 after(async () => {
@@ -77,6 +78,35 @@ test('password reset flow', async () => {
   assert.ok(r.token);
 });
 
+test('quick unlock: device key signs in, rotates, and is revoked by password reset', async () => {
+  const email = 'it11111111@my.sliit.lk';
+  const t = ok(await call('POST', '/auth/login', null, { email, password: 'newpass99', device: 'Pixel test' })).token;
+  const on = ok(await call('POST', '/auth/quick-unlock', t, { device: 'Pixel test' }), 201);
+  assert.ok(on.unlockKey.length >= 40);
+  assert.equal(on.user.privacy.biometricUnlock, true);
+
+  const s1 = ok(await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: on.unlockKey, device: 'Pixel test' }));
+  assert.ok(s1.token);
+  assert.equal(s1.user.email, email);
+  assert.notEqual(s1.unlockKey, on.unlockKey);
+  ok(await call('GET', '/auth/me', s1.token));
+  // The old key was replaced, so a copy of it no longer works.
+  const reused = await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: on.unlockKey });
+  assert.equal(reused.status, 401);
+  assert.equal(reused.body.error.code, 'QUICK_UNLOCK_INVALID');
+
+  // Turning it off on the phone removes the key.
+  ok(await call('POST', '/auth/quick-unlock/remove', null, { unlockKey: s1.unlockKey }));
+  assert.equal((await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: s1.unlockKey })).status, 401);
+  assert.equal(ok(await call('GET', '/auth/me', s1.token)).user.privacy.biometricUnlock, false);
+
+  // A password reset turns quick unlock off everywhere.
+  const again = ok(await call('POST', '/auth/quick-unlock', s1.token, {}), 201);
+  const f = ok(await call('POST', '/auth/forgot', null, { email }));
+  ok(await call('POST', '/auth/reset', null, { email, code: f.devOtp, password: 'newpass99' }));
+  assert.equal((await call('POST', '/auth/quick-unlock/sign-in', null, { unlockKey: again.unlockKey })).status, 401);
+});
+
 test('student booking: duplicate block, slot race and new booking (FR2, FR3, FR7)', async () => {
   const fresh = (await call('POST', '/auth/login', null, { email: 'it11111111@my.sliit.lk', password: 'newpass99' })).body.token;
   const list = ok(await call('GET', '/counsellors', fresh)).counsellors;
@@ -98,6 +128,46 @@ test('student booking: duplicate block, slot race and new booking (FR2, FR3, FR7
   ok(await call('POST', `/appointments/${booked.id}/cancel`, fresh, { reason: 'Changed my mind' }));
   const again = ok(await call('GET', `/appointments/${booked.id}`, fresh)).appointment;
   assert.equal(again.status, 'cancelled');
+});
+
+test('anonymous online booking hides the student from the counsellor', async () => {
+  const fresh = (await call('POST', '/auth/login', null, { email: 'it11111111@my.sliit.lk', password: 'newpass99' })).body.token;
+  const c = ok(await call('GET', '/counsellors', fresh)).counsellors.find((x) => x.name.includes('Hasini'));
+  assert.ok(c && c.next && c.modes.includes('online'), 'Hasini has an open online slot');
+  const inPerson = await call('POST', '/appointments', fresh, { counsellorId: c.id, start: c.next.start, mode: 'in_person', anonymous: true });
+  assert.equal(inPerson.status, 400);
+
+  const mine = ok(await call('POST', '/appointments', fresh, { counsellorId: c.id, start: c.next.start, mode: 'online', note: 'Feeling low', anonymous: true }), 201).appointment;
+  assert.equal(mine.anonymous, true);
+  assert.equal(mine.student.name, 'New Student'); // the student still sees their own booking normally
+
+  // Nothing that identifies the student reaches the counsellor.
+  const leaks = (o) => /New Student|IT11111111|it11111111/i.test(JSON.stringify(o));
+  const seen = ok(await call('GET', `/appointments/${mine.id}`, tokens.counsellor)).appointment;
+  assert.equal(seen.student.name, 'Anonymous student');
+  assert.equal(seen.student.id, null);
+  assert.equal(seen.note, 'Feeling low');
+  assert.ok(!leaks(seen));
+  const dash = ok(await call('GET', '/staff/dashboard', tokens.counsellor));
+  assert.ok(dash.pending.some((a) => a.id === mine.id && a.student.anonymous));
+  assert.ok(!leaks(dash));
+  const profile = ok(await call('GET', `/appointments/${mine.id}/student`, tokens.counsellor));
+  assert.equal(profile.anonymous, true);
+  assert.equal(profile.moodTrend, null);
+  assert.ok(!leaks(profile));
+  assert.deepEqual(ok(await call('GET', `/appointments/${mine.id}/duplicates`, tokens.counsellor)).others, []);
+  // (Earlier notifications about this student's normal bookings are fine; these are about the anonymous one.)
+  const notes = ok(await call('GET', '/notifications', tokens.counsellor)).notifications.filter((n) => n.link?.id === mine.id);
+  assert.ok(notes.some((n) => /An anonymous student/.test(n.body)));
+  assert.ok(!leaks(notes));
+
+  // It can't be referred to a doctor, because a referral needs the student's identity.
+  ok(await call('POST', `/appointments/${mine.id}/accept`, tokens.counsellor));
+  const doc = ok(await call('GET', '/staff/doctors', tokens.counsellor)).doctors[0];
+  const ref = await call('POST', '/referrals', tokens.counsellor, { appointmentId: mine.id, doctorId: doc.id, urgency: 'routine', reason: 'Recurring headaches for a month', share: { summary: true, contact: true }, consent: true });
+  assert.equal(ref.status, 400);
+  assert.equal(ref.body.error.code, 'ANONYMOUS_BOOKING');
+  ok(await call('POST', `/appointments/${mine.id}/cancel`, tokens.counsellor, { reason: 'Test finished' }));
 });
 
 test('counsellor: accept, propose, student accepts proposal, session and notes (FR6, NFR5)', async () => {
@@ -158,7 +228,8 @@ test('availability: hours, blocks and booking conflicts (FR2)', async () => {
   assert.equal(bad.status, 400);
   ok(await call('PUT', '/staff/availability', tokens.counsellor, { sessionLength: 30, bufferMinutes: 0 }));
   const appts = ok(await call('GET', '/appointments?scope=upcoming', tokens.counsellor)).appointments.filter((a) => a.status === 'confirmed');
-  const a = appts[0];
+  // A 30-minute block must end by 23:59, so skip late-evening bookings (seed times follow the clock).
+  const a = appts.find((x) => T.toMinutes(T.local(x.start).time) + 30 < 24 * 60);
   const d = T.local(a.start);
   const clash = await call('POST', '/staff/availability/blocks', tokens.counsellor, { date: d.dateStr, from: d.time, to: T.fromMinutes(T.toMinutes(d.time) + 30), reason: 'Meeting' });
   assert.equal(clash.status, 409);

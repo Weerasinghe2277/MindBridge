@@ -25,6 +25,8 @@ const AppointmentSchema = new Schema({
   start: { type: Date, required: true },
   end: { type: Date, required: true },
   mode: { type: String, enum: ['online', 'in_person'], required: true },
+  // Online only: the counsellor never sees who booked (name, ID, faculty, contact, history).
+  anonymous: { type: Boolean, default: false },
   location: String,
   meetingLink: String,
   note: encryptedString(), // visible to the counsellor only

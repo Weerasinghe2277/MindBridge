@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <!-- Onboarding 1 · Welcome (Tone.green). A student resting under a tree, a bridge to support behind. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E6EEDD"/><stop offset="1" stop-color="#F6F2EA"/>
+    </linearGradient>
+    <g id="leaf"><path d="M0 0 C18 -26 56 -26 68 0 C56 26 18 26 0 0 Z"/><path d="M4 0 H60" stroke="#FFFDF9" stroke-opacity=".55" stroke-width="3" fill="none"/></g>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="1010" cy="110" r="330" fill="#3A6647" opacity=".06"/>
+  <circle cx="120" cy="790" r="270" fill="#3A6647" opacity=".05"/>
+
+  <!-- sun and clouds -->
+  <circle cx="880" cy="210" r="118" fill="#FBEFD8" opacity=".6"/>
+  <circle cx="880" cy="210" r="74" fill="#F7DFA8"/>
+  <g fill="#FFFDF9" opacity=".9">
+    <rect x="170" y="150" width="190" height="46" rx="23"/><rect x="215" y="122" width="96" height="52" rx="26"/>
+    <rect x="960" y="320" width="150" height="38" rx="19"/><rect x="995" y="298" width="72" height="42" rx="21"/>
+  </g>
+
+  <!-- far hills and the bridge -->
+  <path d="M0 500 Q260 400 560 470 T1200 440 V800 H0 Z" fill="#C5D7B3"/>
+  <path d="M0 575 Q260 480 700 545 Q960 470 1200 540 V800 H0 Z" fill="#B8D39A"/>
+  <path d="M672 540 C700 580 640 610 690 660 L790 660 C730 612 770 580 748 540 Z" fill="#E2ECF7"/>
+  <path d="M700 566 q14 10 0 22 M724 600 q14 10 0 22" stroke="#FFFDF9" stroke-width="4" fill="none" stroke-linecap="round" opacity=".8"/>
+  <g fill="none" stroke="#2F5A3D" stroke-linecap="round">
+    <path d="M610 548 Q710 488 810 548" stroke-width="14"/>
+    <path d="M622 512 Q710 456 798 512" stroke-width="7"/>
+    <path d="M648 528 V500 M680 512 V480 M710 506 V474 M740 512 V480 M772 528 V500" stroke-width="6"/>
+  </g>
+
+  <!-- front meadow -->
+  <path d="M0 640 Q330 560 700 630 T1200 640 V800 H0 Z" fill="#A6C68A"/>
+  <path d="M0 720 Q420 670 1200 730 V800 H0 Z" fill="#8FB676" opacity=".7"/>
+  <g fill="#FFFDF9"><circle cx="760" cy="690" r="6"/><circle cx="820" cy="672" r="5"/><circle cx="1010" cy="700" r="6"/><circle cx="1080" cy="676" r="5"/><circle cx="140" cy="700" r="5"/></g>
+  <g fill="#E59A2B"><circle cx="760" cy="690" r="2.5"/><circle cx="1010" cy="700" r="2.5"/></g>
+
+  <!-- tree -->
+  <ellipse cx="300" cy="640" rx="170" ry="18" fill="#2F5A3D" opacity=".14"/>
+  <rect x="248" y="420" width="30" height="220" rx="15" fill="#7A5A41"/>
+  <path d="M263 520 L222 470" stroke="#7A5A41" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="190" cy="440" r="80" fill="#4A7C59"/>
+  <circle cx="340" cy="440" r="86" fill="#3F6E4E"/>
+  <circle cx="263" cy="372" r="112" fill="#4A7C59"/>
+  <circle cx="230" cy="335" r="40" fill="#6E9E6F" opacity=".55"/>
+  <circle cx="320" cy="410" r="26" fill="#6E9E6F" opacity=".45"/>
+
+  <!-- student with a warm drink -->
+  <ellipse cx="450" cy="634" rx="110" ry="14" fill="#2F5A3D" opacity=".16"/>
+  <path d="M410 590 L488 556 L500 626" fill="none" stroke="#2F5A3D" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M428 600 L492 578 L512 628" fill="none" stroke="#3A6647" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <ellipse cx="512" cy="630" rx="24" ry="11" fill="#22261F"/>
+  <rect x="366" y="470" width="78" height="126" rx="36" fill="#E9A84A"/>
+  <path d="M378 505 Q420 520 456 506" stroke="#E9A84A" stroke-width="26" stroke-linecap="round" fill="none"/>
+  <rect x="448" y="484" width="34" height="38" rx="8" fill="#FFFDF9"/>
+  <path d="M482 494 q14 0 14 12 q0 12 -14 12" fill="none" stroke="#FFFDF9" stroke-width="6"/>
+  <path d="M458 470 q-8 -12 0 -24 M472 470 q-8 -12 0 -24" fill="none" stroke="#FFFDF9" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+  <circle cx="448" cy="512" r="12" fill="#C68B64"/>
+  <rect x="396" y="448" width="20" height="30" rx="8" fill="#B47A55"/>
+  <circle cx="406" cy="424" r="36" fill="#C68B64"/>
+  <path d="M370 424 C366 386 400 372 424 380 C446 386 450 404 444 418 C430 404 404 400 384 410 C380 424 376 440 372 446 Z" fill="#2F2A24"/>
+  <path d="M396 428 q6 5 12 0 M420 426 q6 5 12 0" stroke="#2F2A24" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M408 444 q8 6 16 0" stroke="#8A4E35" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <circle cx="398" cy="440" r="6" fill="#E58F7E" opacity=".45"/>
+
+  <!-- open notebook -->
+  <g transform="translate(560 618) skewX(-18)">
+    <rect x="0" y="0" width="58" height="34" rx="4" fill="#FFFDF9"/><rect x="60" y="0" width="58" height="34" rx="4" fill="#FFFDF9"/>
+    <path d="M10 10 H48 M10 20 H40 M70 10 H108 M70 20 H96" stroke="#B8D39A" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- floating leaves -->
+  <use href="#leaf" fill="#4A7C59" transform="translate(560 300) rotate(-24)"/>
+  <use href="#leaf" fill="#B8D39A" transform="translate(680 220) rotate(18) scale(.8)"/>
+  <use href="#leaf" fill="#6E9E6F" transform="translate(1040 430) rotate(-40) scale(.7)"/>
+</svg>

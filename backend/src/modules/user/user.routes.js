@@ -4,7 +4,7 @@
 const express = require('express');
 const User = require('../../models/User');
 const Appointment = require('../../models/Appointment');
-const { AuthSession } = require('../../models');
+const { AuthSession, QuickUnlockKey } = require('../../models');
 const { requireAuth, requireRole } = require('../../middleware/auth');
 const { body, z } = require('../../middleware/validate');
 const { notify, audit } = require('../../services/notify');
@@ -75,6 +75,7 @@ router.patch('/users/:id/status', body(z.object({ status: z.enum(['active', 'dea
   await u.save();
   if (u.status === 'deactivated') {
     await AuthSession.updateMany({ user: u._id }, { revoked: true });
+    await QuickUnlockKey.deleteMany({ user: u._id });
     const active = await Appointment.find({ $or: [{ student: u._id }, { counsellor: u._id }], status: { $in: Appointment.ACTIVE } });
     for (const a of active) {
       a.status = 'cancelled'; a.slotLock = false; a.cancel = { reason: 'Account deactivated', by: 'admin', at: new Date() };

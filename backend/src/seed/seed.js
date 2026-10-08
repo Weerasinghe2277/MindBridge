@@ -80,7 +80,7 @@ async function seed({ quiet = false } = {}) {
   const jan = new Date(Date.UTC(2026, 0, 12));
 
   // ---------- Staff ----------
-  const admin = await mkUser({ role: 'admin', name: 'Malsha Gunawardena', email: 'malsha.g@sliit.lk', phone: '+94 11 754 2104', professional: { title: 'Administrator', office: 'Student Affairs · Block A', extension: '2104' } });
+  const admin = await mkUser({ role: 'admin', name: 'Malsha Gunawardena', email: 'mindbrige.support@gmail.com', phone: '+94 11 754 2104', professional: { title: 'Administrator', office: 'Student Affairs · Block A', extension: '2104' } });
 
   const hasini = await mkUser({
     role: 'counsellor', name: 'Dr. Hasini Kalupahana', email: 'hasini.k@sliit.lk', gender: 'female', phone: '+94 77 555 0101',
@@ -361,7 +361,7 @@ async function seed({ quiet = false } = {}) {
 
   log('[seed] done.');
   log(`[seed] demo password for every account: ${PASSWORD}`);
-  log('[seed] student: it23714052@my.sliit.lk · counsellor: hasini.k@sliit.lk · doctor: ruwan.d@sliit.lk · admin: malsha.g@sliit.lk');
+  log('[seed] student: it23714052@my.sliit.lk · counsellor: hasini.k@sliit.lk · doctor: ruwan.d@sliit.lk · admin: mindbrige.support@gmail.com');
 }
 
 module.exports = { seed };

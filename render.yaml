@@ -1,0 +1,56 @@
+# Render blueprint: Dashboard → New → Blueprint → pick this repo.
+# You'll be asked for:
+#   MONGO_URI            your MongoDB Atlas connection string (MONGO_URI in backend/.env)
+#   DATA_ENCRYPTION_KEY  must be the SAME value as in backend/.env, so encrypted
+#                        journal entries and notes stay readable everywhere
+#   CLOUDINARY_URL       optional: cloudinary://<api_key>:<api_secret>@<cloud_name> for file storage
+#   GEMINI_API_KEY       optional: Bridge assistant (Google AI Studio key)
+#   SMTP_USER / SMTP_PASS / SMTP_FROM  optional: Gmail address, app password, "MindBridge <address>"
+services:
+  - type: web
+    name: mindbridge-api
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 12h
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: STUDENT_EMAIL_DOMAINS
+        value: my.sliit.lk
+      - key: STAFF_EMAIL_DOMAINS
+        value: sliit.lk
+      # Coursework demo: shows one-time codes in the app because email isn't set up.
+      - key: DEMO_MODE
+        value: "true"
+      # Fills an empty database with the demo accounts on first start (Atlas is already seeded).
+      - key: SEED_IF_EMPTY
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
+      # Gmail for one-time codes (same values as backend/.env). Optional.
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false

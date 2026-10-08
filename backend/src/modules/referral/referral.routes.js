@@ -90,6 +90,7 @@ router.post('/', requireRole('counsellor'), body(createSchema), async (req, res)
   if (!b.consent) throw badRequest('Record the student’s consent before referring.', 'CONSENT_REQUIRED', { field: 'consent' });
   const appt = await Appointment.findOne({ _id: b.appointmentId, counsellor: req.user._id }).populate('student');
   if (!appt) throw notFound('Session not found.');
+  if (appt.anonymous) throw badRequest('This was an anonymous booking, so it can’t be referred. If the student agrees, ask them to book a regular session first.', 'ANONYMOUS_BOOKING');
   const doctor = await User.findOne({ _id: b.doctorId, role: 'doctor', status: 'active', 'verification.status': 'approved' });
   if (!doctor) throw notFound('Doctor not found.');
   if (await Referral.findOne({ student: appt.student._id, doctor: doctor._id, status: 'new' })) {
