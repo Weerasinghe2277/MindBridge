@@ -1,9 +1,9 @@
 // Bridge — the AI wellness assistant (FR10). It is supportive, never clinical,
 // and hands off to the 1926 helpline when a message suggests risk (FR8).
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenAI } = require('@google/genai');
 const env = require('../config/env');
 
-const client = env.anthropicKey ? new Anthropic({ apiKey: env.anthropicKey }) : null;
+const client = env.geminiKey ? new GoogleGenAI({ apiKey: env.geminiKey }) : null;
 
 // Server-side safety net. Matching messages never go to the model: the student is
 // shown crisis support immediately.
@@ -32,41 +32,51 @@ How to respond:
 - If the student mentions crisis, self-harm, suicide or being in danger, tell them to call 1926 (National Mental Health Helpline, free, 24/7) right away.
 - Keep the conversation private and student-led; don't ask for identifying details.`;
 
-function toMessages(history, text) {
-  const msgs = [];
+// Gemini wants alternating user/model turns that start with the user.
+function toContents(history, text) {
+  const turns = [];
   for (const m of history) {
-    const role = m.from === 'me' ? 'user' : 'assistant';
-    if (!msgs.length && role === 'assistant') continue; // must start with a user turn
-    const last = msgs[msgs.length - 1];
-    if (last && last.role === role) last.content += `\n${m.text}`;
-    else msgs.push({ role, content: m.text });
+    const role = m.from === 'me' ? 'user' : 'model';
+    if (!turns.length && role === 'model') continue;
+    const last = turns[turns.length - 1];
+    if (last && last.role === role) last.text += `\n${m.text}`;
+    else turns.push({ role, text: m.text });
   }
-  const last = msgs[msgs.length - 1];
-  if (last && last.role === 'user') last.content += `\n${text}`;
-  else msgs.push({ role: 'user', content: text });
-  return msgs;
+  const last = turns[turns.length - 1];
+  if (last && last.role === 'user') last.text += `\n${text}`;
+  else turns.push({ role: 'user', text });
+  return turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] }));
+}
+
+// Busy (503), rate-limited (429) or briefly failing (500): worth trying the backup model.
+const BUSY = new Set([429, 500, 503]);
+
+async function generate(firstName, history, text) {
+  const request = (model) => client.models.generateContent({
+    model,
+    contents: toContents(history.slice(-12), text),
+    config: { systemInstruction: systemPrompt(firstName), temperature: 0.7 },
+  });
+  try {
+    return await request(env.bridgeModel);
+  } catch (err) {
+    if (!BUSY.has(err?.status) || !env.bridgeFallbackModel || env.bridgeFallbackModel === env.bridgeModel) throw err;
+    console.warn(`[bridge] ${env.bridgeModel} busy (${err.status}), trying ${env.bridgeFallbackModel}`);
+    return request(env.bridgeFallbackModel);
+  }
 }
 
 async function reply({ firstName, history, text }) {
   if (!client) return { text: FALLBACKS[history.length % FALLBACKS.length], source: 'offline' };
   try {
-    const response = await client.beta.messages.create({
-      model: env.bridgeModel,
-      max_tokens: 4000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: { effort: 'low' },
-      system: systemPrompt(firstName),
-      messages: toMessages(history.slice(-12), text),
-    });
-    if (response.stop_reason === 'refusal') {
-      return { text: FALLBACKS[2], source: 'refusal' };
-    }
-    const out = response.content.filter((b) => b.type === 'text').map((b) => b.text).join(' ').trim();
-    return { text: out || FALLBACKS[0], source: 'claude' };
+    const response = await generate(firstName, history, text);
+    // A safety block returns no text; answer with a gentle built-in reply instead.
+    if (response.promptFeedback?.blockReason) return { text: FALLBACKS[2], source: 'blocked' };
+    const out = (response.text || '').trim();
+    return { text: out || FALLBACKS[0], source: 'gemini' };
   } catch (err) {
-    if (err instanceof Anthropic.RateLimitError) console.warn('[bridge] rate limited');
-    else if (err instanceof Anthropic.APIError) console.warn(`[bridge] API error ${err.status}: ${err.message}`);
+    if (err?.status === 429) console.warn('[bridge] Gemini rate limit reached');
+    else if (err?.status) console.warn(`[bridge] Gemini API error ${err.status}: ${err.message}`);
     else console.warn('[bridge] request failed:', err.message);
     return { text: FALLBACKS[history.length % FALLBACKS.length], source: 'offline' };
   }

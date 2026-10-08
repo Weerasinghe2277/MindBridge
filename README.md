@@ -69,7 +69,7 @@ The emulator reaches your computer's API at `10.0.2.2:4000` automatically. In de
 
 Without SMTP configured, one-time codes (email verification, password reset, admin sign-in) are printed in the API console **and shown inside the app** in a "Development mode" banner. Set `SMTP_*` in `.env` to send real emails; codes are never exposed when `NODE_ENV=production`.
 
-Optional: set `ANTHROPIC_API_KEY` to power the **Bridge** assistant with Claude. Without it Bridge uses built-in supportive replies. Crisis detection and the 1926 hand-off work either way.
+Optional: set `GEMINI_API_KEY` (free key from [Google AI Studio](https://aistudio.google.com/apikey)) to power the **Bridge** assistant with Google Gemini. Without it Bridge uses built-in supportive replies. Crisis detection and the 1926 hand-off work either way.
 
 ---
 
@@ -101,7 +101,7 @@ cd frontend && flutter test
 | FR7 | Detect duplicate bookings | Server blocks a second active booking (configurable). A unique index prevents two students taking one slot. Counsellors get a duplicate view. |
 | FR8 | One-tap 1926 helpline | SOS on Home and Wellness, press-and-hold for 5 s, dialler confirmation (`features/wellness/emergency.dart`) |
 | FR9 | Optional mood check-in | Check-in, calendar, history, insights, encrypted journal (`modules/mood/`, `routes/journal.js`) |
-| FR10 | AI wellness assistant with escalation | `services/bridge.js`: Claude with offline fallback; crisis messages never reach the model and switch to 1926 |
+| FR10 | AI wellness assistant with escalation | `services/bridge.js`: Google Gemini with offline fallback; crisis messages never reach the model and switch to 1926 |
 | FR11 | Admin verifies counsellors/doctors | Document upload, checklist, approve, reject, request changes; unverified staff are gated (`requireVerified`) |
 | FR12 | Anonymised reporting | `routes/reports.js`: every group under 10 is hidden; CSV/PDF export through one-time links |
 | NFR1 | Privacy | Role-based access on every route. Counsellors see bookings only; mood is shared only if the student opts in. Doctors see only what was shared. Admins never see content. |
