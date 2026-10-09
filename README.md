@@ -17,6 +17,18 @@ One app and one secure sign-in serve four roles: **Student**, **Counsellor**, **
 
 ---
 
+## Download the app
+
+📱 **[Download the MindBridge Android APK (Google Drive)](https://drive.google.com/drive/folders/1tGnmtKW6VEuSMwBBpnhvVYW8b4lyU3cR?usp=sharing)**
+
+1. Open the link on your Android phone and download the `.apk` file.
+2. Open the downloaded file. If Android asks, allow **Install unknown apps** for your browser or Files app.
+3. Open **MindBridge**. It connects to the hosted server, so nothing else needs to run.
+
+The server sleeps when nobody uses it, so the first screen can take up to about a minute to load. If an older MindBridge is already installed and the install fails, uninstall it first.
+
+---
+
 ## Team and responsibilities
 
 Each member owns two features, each a full CRUD module with its own backend routes and app screens.
@@ -162,6 +174,8 @@ cd frontend
 flutter build apk --release
 ```
 The APK is saved at `frontend/build/app/outputs/flutter-apk/app-release.apk`. Drag it onto the emulator window, or copy it to a phone and open it to install. Release builds connect to the hosted server.
+
+To just use the app without building it, download the ready-made APK from the [Google Drive folder](https://drive.google.com/drive/folders/1tGnmtKW6VEuSMwBBpnhvVYW8b4lyU3cR?usp=sharing).
 
 ---
 
