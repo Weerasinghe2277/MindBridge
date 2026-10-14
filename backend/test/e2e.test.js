@@ -4,6 +4,9 @@ process.env.USE_MEMORY_DB = 'true';
 process.env.NODE_ENV = 'test';
 process.env.CLOUDINARY_URL = ''; // always test against GridFS, never a real Cloudinary account
 process.env.GEMINI_API_KEY = ''; // Bridge uses its built-in replies in tests, never the real Gemini API
+process.env.SMTP_HOST = ''; // never email real addresses from tests; codes come back as devOtp
+process.env.GMAIL_REFRESH_TOKEN = '';
+process.env.EXPOSE_DEV_OTP = 'true';
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');

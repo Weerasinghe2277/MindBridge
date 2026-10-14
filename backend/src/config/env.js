@@ -39,25 +39,41 @@ const env = {
   bridgeModel: process.env.BRIDGE_MODEL || 'gemini-flash-latest',
   // Used when the main model is busy (high demand / rate limit).
   bridgeFallbackModel: process.env.BRIDGE_FALLBACK_MODEL || 'gemini-flash-lite-latest',
-  smtp: {
-    host: process.env.SMTP_HOST || '',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || 'MindBridge <no-reply@mindbridge.local>',
-  },
-  // When true the API includes one-time codes in responses so the app can be demoed without email.
+  // Email for one-time codes, sent from the MindBridge support Gmail account (see services/mail.js).
+  mail: (() => {
+    const gmail = {
+      clientId: process.env.GMAIL_CLIENT_ID || '',
+      clientSecret: process.env.GMAIL_CLIENT_SECRET || '',
+      refreshToken: process.env.GMAIL_REFRESH_TOKEN || '',
+    };
+    gmail.enabled = Boolean(gmail.clientId && gmail.clientSecret && gmail.refreshToken);
+    const smtp = {
+      host: process.env.SMTP_HOST || '',
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      user: process.env.SMTP_USER || '',
+      pass: process.env.SMTP_PASS || '',
+    };
+    return {
+      gmail,
+      smtp,
+      enabled: gmail.enabled || Boolean(smtp.host),
+      from: process.env.MAIL_FROM || process.env.SMTP_FROM || 'MindBridge Support <mindbrige.support@gmail.com>',
+    };
+  })(),
+  // Without email, the API includes one-time codes in responses so the app can be demoed.
   // DEMO_MODE=true allows this on a deployed server too — only for coursework demos, never real users.
+  // Once email is configured, codes are only ever sent by email.
   demoMode: process.env.DEMO_MODE === 'true',
   // Load the demo data on first start when the database is empty (useful on a fresh cloud database).
   seedIfEmpty: process.env.SEED_IF_EMPTY === 'true',
-  exposeDevOtp: process.env.DEMO_MODE === 'true' || (!isProd && process.env.EXPOSE_DEV_OTP !== 'false'),
   publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
   // File storage (optional). cloudinary://<api_key>:<api_secret>@<cloud_name> from the Cloudinary
   // dashboard. Without it, uploads are kept in MongoDB GridFS.
   cloudinaryUrl: process.env.CLOUDINARY_URL || '',
   cloudinaryFolder: process.env.CLOUDINARY_FOLDER || 'mindbridge',
 };
+
+env.exposeDevOtp = !env.mail.enabled && (env.demoMode || (!isProd && process.env.EXPOSE_DEV_OTP !== 'false'));
 
 if (env.dataKey.length !== 32) {
   throw new Error('DATA_ENCRYPTION_KEY must be 64 hex characters (32 bytes)');

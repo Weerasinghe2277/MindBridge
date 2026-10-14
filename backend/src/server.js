@@ -15,7 +15,9 @@ async function main() {
     console.log(`[api] MindBridge API listening on http://localhost:${env.port}/api`);
     if (!env.geminiKey) console.log('[api] GEMINI_API_KEY not set — Bridge uses built-in supportive replies');
     else console.log(`[api] Bridge uses Gemini (${env.bridgeModel})`);
-    if (env.isProd && env.demoMode) console.warn('[api] DEMO_MODE is on: one-time codes are returned to the app. Turn it off before real students use MindBridge.');
+    if (env.mail.gmail.enabled) console.log('[api] One-time codes are emailed with the Gmail API');
+    else if (env.mail.enabled) console.log(`[api] One-time codes are emailed over SMTP (${env.mail.smtp.host})`);
+    else if (env.exposeDevOtp) console.warn('[api] Email is not configured: one-time codes are returned to the app. Set up email before real students use MindBridge.');
   });
   const timer = startScheduler();
   const shutdown = async () => {
