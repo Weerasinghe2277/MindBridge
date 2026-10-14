@@ -130,12 +130,23 @@ Create `backend/.env` (it is git-ignored, so secrets never go to GitHub):
 | `STUDENT_EMAIL_DOMAINS` / `STAFF_EMAIL_DOMAINS` | no | Allowed sign-up email domains (`my.sliit.lk` / `sliit.lk`) |
 | `GEMINI_API_KEY` | no | Google AI Studio key for the Bridge assistant. Without it, Bridge uses built-in supportive replies |
 | `BRIDGE_MODEL` / `BRIDGE_FALLBACK_MODEL` | no | Gemini models (default `gemini-flash-latest`, backup `gemini-flash-lite-latest`) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | no | Email for one-time codes (e.g. Gmail with an app password) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | yes | Email for one-time codes (Brevo SMTP on port 2525) — see [Email](#email-for-one-time-codes) |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | no | Optional alternative: email through the Gmail API. Used instead of SMTP when set |
+| `MAIL_FROM` | no | Sender, default `MindBridge Support <mindbrige.support@gmail.com>` |
 | `CLOUDINARY_URL` | no | `cloudinary://<api_key>:<api_secret>@<cloud_name>` for photos, covers, music and documents |
-| `DEMO_MODE` | no | `true` shows one-time codes inside the app (coursework demos only) |
+| `DEMO_MODE` | no | `true` shows one-time codes inside the app, **only while no email is configured** (coursework demos only) |
 | `SEED_IF_EMPTY` | no | `true` loads demo data on first start when the database is empty |
 
-Without SMTP in development, one-time codes (email verification, password reset, admin sign-in) are printed in the API console and shown in the app in a "Development mode" banner. They are never shown when `NODE_ENV=production` unless `DEMO_MODE=true`.
+One-time codes (email verification, password reset, admin sign-in) are emailed from `mindbrige.support@gmail.com`. Only when no email is configured at all are they printed in the API console and shown in the app in a "Development mode" banner (never with `NODE_ENV=production` unless `DEMO_MODE=true`). If email is configured but sending fails, the app shows "We couldn't send the email right now".
+
+#### Email for one-time codes
+Codes are sent through **Brevo** (free, 300 emails a day) as `mindbrige.support@gmail.com`. Render's free plan blocks SMTP ports 25/465/587, so Brevo's port **2525** is used.
+1. In Brevo → **Senders, domains, IPs**, make sure `mindbrige.support@gmail.com` is a verified sender.
+2. **SMTP & API → SMTP**: note the login (`…@smtp-brevo.com`) and generate an SMTP key.
+3. **Security → Authorized IPs**: deactivate IP blocking (Render has no fixed IP), otherwise Brevo answers `525 Unauthorized IP address`.
+4. Set `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=2525`, `SMTP_USER`, `SMTP_PASS` (the SMTP key) and `SMTP_FROM` in `backend/.env`, and `SMTP_USER` / `SMTP_PASS` in Render → Environment.
+
+Alternatively the Gmail API can be used (`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` from a Google Cloud "Desktop app" OAuth client, then `npm run gmail-token`); it takes priority over SMTP when set.
 
 ### 3. Run the backend
 ```bash
@@ -286,5 +297,5 @@ render.yaml                  Render Blueprint for the API
 - **Video sessions** open a private Jitsi Meet room generated for each booking.
 - **Music:** Student Affairs uploads MP3/M4A tracks (System → Relaxing music), streamed with `just_audio`. Seeded demo tracks have no audio and play as timed demos.
 - **Notifications** are in-app. Real push notifications (FCM/APNs) need a Firebase project.
-- **Email on Render's free plan** may be blocked; sign-in still works, and with `DEMO_MODE=true` the code appears in the app.
+- **Email on Render's free plan:** ports 25/465/587 are blocked, so Brevo's port 2525 is used.
 - **Production checklist:** `NODE_ENV=production`, your own `JWT_SECRET` and `DATA_ENCRYPTION_KEY`, SMTP, HTTPS, a restricted `CORS_ORIGINS`, and `DEMO_MODE` turned off before real students use MindBridge.
